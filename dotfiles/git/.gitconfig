@@ -1,0 +1,29 @@
+[user]
+  name = Gregg Gilbert
+  email = gregggilbert16@gmail.com
+
+[core]
+	excludesfile = ~/.gitignore
+	sshCommand = ssh -o IdentitiesOnly=yes -i ~/.ssh/personal
+
+[push]
+	default = current
+	followTags = true
+
+[remote]
+  pushDefault = origin
+
+[branch]
+	autosetuprebase = always
+
+[commit]
+	verbose = true
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[include]
+	path = ~/.gitconfig-local

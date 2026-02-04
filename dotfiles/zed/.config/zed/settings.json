@@ -1,0 +1,28 @@
+{
+  "language_models": {
+    "anthropic": {
+      "api_url": "https://api.anthropic.com/v1"
+    }
+  },
+  "agent": {
+    "default_model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929"
+    }
+  },
+  "edit_predictions": {
+    "disabled_globs": ["**/*"]
+  },
+  "ui_font_size": 14,
+  "buffer_font_family": "JetBrains Mono",
+  "buffer_font_size": 14,
+  "theme": "Tokyo Night",
+  "terminal": {
+    "font_size": 12
+  },
+  "autosave": {
+    "after_delay": {
+      "milliseconds": 1000
+    }
+  }
+}
