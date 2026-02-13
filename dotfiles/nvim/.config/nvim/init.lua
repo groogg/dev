@@ -173,6 +173,9 @@ require("lazy").setup({
 
       local builtin = require("telescope.builtin")
       vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "Search files" })
+      vim.keymap.set("n", "<leader>sF", function()
+        builtin.find_files({ hidden = true, no_ignore = true })
+      end, { desc = "Search ALL files (incl. ignored)" })
       vim.keymap.set("n", "<leader>sg", builtin.live_grep, { desc = "Search grep" })
       vim.keymap.set("n", "<leader>sd", builtin.diagnostics, { desc = "Search diagnostics" })
       vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "Search resume" })
@@ -306,6 +309,7 @@ require("lazy").setup({
         { "<leader>p", group = "Python" },
         { "<leader>9", group = "99 AI", mode = "v" },
         { "<leader>sf", desc = "Search files" },
+        { "<leader>sF", desc = "Search ALL files (incl. ignored)" },
         { "<leader>sg", desc = "Search grep" },
         { "<leader>sd", desc = "Search diagnostics" },
         { "<leader>sr", desc = "Search resume" },
