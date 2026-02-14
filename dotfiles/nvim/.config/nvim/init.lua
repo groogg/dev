@@ -85,6 +85,10 @@ vim.keymap.set("n", "<leader>pf", function()
   local name = vim.fn.matchstr(vim.fn.getline(func), "def \\zs\\w\\+")
   vim.cmd("vsplit | term uv run pytest " .. vim.fn.expand("%") .. " -v -k " .. name)
 end, { desc = "Pytest current function" })
+vim.keymap.set("n", "<leader>pa", function()
+  vim.cmd("w")
+  vim.cmd("vsplit | term uv run pytest -v")
+end, { desc = "Pytest all tests" })
 vim.keymap.set("n", "<leader>pb", function()
   local line = vim.fn.line(".")
   local cur = vim.fn.getline(line)
@@ -212,7 +216,7 @@ require("lazy").setup({
       local capabilities = require("blink.cmp").get_lsp_capabilities()
 
       require("mason-lspconfig").setup({
-        ensure_installed = { "pyright", "ruff" },
+        ensure_installed = { "pyright", "ruff", "terraformls", "sqls", "yamlls", "jsonls", "taplo", "gopls", "ts_ls", "dockerls" },
         handlers = {
           function(server_name)
             require("lspconfig")[server_name].setup({ capabilities = capabilities })
@@ -261,7 +265,7 @@ require("lazy").setup({
     build = ":TSUpdate",
     main = "nvim-treesitter.configs",
     opts = {
-      ensure_installed = { "python", "lua", "vim", "vimdoc", "markdown", "bash", "json", "yaml", "toml", "sql" },
+      ensure_installed = { "python", "lua", "vim", "vimdoc", "markdown", "bash", "json", "yaml", "toml", "sql", "terraform", "hcl", "make", "go", "gomod", "gosum", "typescript", "javascript", "tsx", "html", "css", "dockerfile" },
       highlight = { enable = true },
     },
   },
@@ -274,6 +278,10 @@ require("lazy").setup({
     opts = {
       formatters_by_ft = {
         python = { "ruff_format" },
+        terraform = { "terraform_fmt" },
+        tf = { "terraform_fmt" },
+        toml = { "taplo" },
+        go = { "gofumpt", "goimports" },
       },
       format_on_save = {
         timeout_ms = 500,
@@ -286,6 +294,7 @@ require("lazy").setup({
   {
     "lewis6991/gitsigns.nvim",
     opts = {
+      current_line_blame = true,
       signs = {
         add = { text = "+" },
         change = { text = "~" },
@@ -294,6 +303,31 @@ require("lazy").setup({
         changedelete = { text = "~" },
       },
     },
+  },
+
+  -- Todo comments -----------------------------------------------------
+  {
+    "folke/todo-comments.nvim",
+    event = "VimEnter",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {},
+    keys = {
+      { "]t", function() require("todo-comments").jump_next() end, desc = "Next TODO" },
+      { "[t", function() require("todo-comments").jump_prev() end, desc = "Prev TODO" },
+      { "<leader>st", "<cmd>TodoTelescope<CR>", desc = "Search TODOs" },
+    },
+  },
+
+  -- Venv selector — auto-detect Python virtualenvs --------------------
+  {
+    "linux-cultist/venv-selector.nvim",
+    branch = "regexp",
+    dependencies = { "neovim/nvim-lspconfig" },
+    ft = "python",
+    keys = {
+      { "<leader>pv", "<cmd>VenvSelect<CR>", desc = "Select venv" },
+    },
+    opts = {},
   },
 
   -- Which-key ---------------------------------------------------------
