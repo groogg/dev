@@ -318,18 +318,6 @@ require("lazy").setup({
     },
   },
 
-  -- Venv selector — auto-detect Python virtualenvs --------------------
-  {
-    "linux-cultist/venv-selector.nvim",
-    branch = "regexp",
-    dependencies = { "neovim/nvim-lspconfig" },
-    ft = "python",
-    keys = {
-      { "<leader>pv", "<cmd>VenvSelect<CR>", desc = "Select venv" },
-    },
-    opts = {},
-  },
-
   -- Which-key ---------------------------------------------------------
   {
     "folke/which-key.nvim",
