@@ -106,7 +106,20 @@ EOF
       mkdir -p "$dir"
       echo "Done! Clone repos into $dir/"
       ;;
-    *) echo "Usage: dev {init|edit|setup [vm]|ssh-key|git-setup}" ;;
+    source)
+      echo "Select environment:"
+      echo "  1) macOS (default)"
+      echo "  2) VM"
+      printf "Choice: " && read choice
+      if [ "$choice" = "2" ]; then
+        make -C ~/dev vm-dot
+      else
+        make -C ~/dev dot
+      fi
+      source ~/.zshrc
+      echo "Dotfiles re-stowed and shell reloaded"
+      ;;
+    *) echo "Usage: dev {init|edit|setup|source|ssh-key|git-setup}" ;;
   esac
 }
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
