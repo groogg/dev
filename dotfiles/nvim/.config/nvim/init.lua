@@ -290,6 +290,16 @@ require("lazy").setup({
     },
   },
 
+  -- Diffview — side-by-side git diffs ---------------------------------
+  {
+    "sindrets/diffview.nvim",
+    keys = {
+      { "<leader>gh", "<cmd>DiffviewFileHistory %<CR>", desc = "File git history" },
+      { "<leader>gd", "<cmd>DiffviewOpen<CR>", desc = "Git diff" },
+    },
+    opts = {},
+  },
+
   -- Git signs ----------------------------------------------------------
   {
     "lewis6991/gitsigns.nvim",
