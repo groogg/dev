@@ -145,11 +145,12 @@ require("lazy").setup({
 
   -- Colorscheme --------------------------------------------------------
   {
-    "folke/tokyonight.nvim",
+    "rose-pine/neovim",
+    name = "rose-pine",
     priority = 1000,
     config = function()
-      require("tokyonight").setup({ style = "night" })
-      vim.cmd.colorscheme("tokyonight")
+      require("rose-pine").setup({})
+      vim.cmd.colorscheme("rose-pine")
     end,
   },
 
@@ -383,7 +384,7 @@ require("lazy").setup({
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
-      options = { theme = "tokyonight" },
+      options = { theme = "rose-pine" },
       sections = {
         lualine_x = { "encoding", "filetype" },
       },
