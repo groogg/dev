@@ -26,7 +26,7 @@ class UserCreate(BaseModel):
     role: str
 
 @app.post("/users")
-def create_user(user: UserCreate):
+def create_user(user: UserCreate) -> User:
     # user.email, user.name, user.role automatically validated
     return db.create_user(user.dict())
 ```

@@ -23,6 +23,10 @@ STOW_PACKAGES := zsh git ghostty nvim zed starship claude
 
 dot:
 	cd dotfiles && stow -R -t $(HOME) $(STOW_PACKAGES)
+	@if [ -f $(HOME)/.claude/settings.json ] && ! jq -e '.statusLine' $(HOME)/.claude/settings.json >/dev/null 2>&1; then \
+		jq '. + {"statusLine":{"type":"command","command":"bash $(HOME)/.claude/statusline-command.sh"}}' \
+		$(HOME)/.claude/settings.json > /tmp/claude-settings.json && mv /tmp/claude-settings.json $(HOME)/.claude/settings.json; \
+	fi
 
 apple:
 	xcode-select --install || true

@@ -17,7 +17,7 @@ from fastapi.security import HTTPBearer
 security = HTTPBearer()
 
 @app.get("/users")
-def list_users(credentials: HTTPAuthorizationCredentials = Security(security)):
+def list_users(credentials: HTTPAuthorizationCredentials = Security(security)) -> list[User]:
     api_key = credentials.credentials
     if not validate_api_key(api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")
@@ -56,7 +56,7 @@ def verify_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 @app.get("/users")
-def list_users(token: str = Security(security)):
+def list_users(token: str = Security(security)) -> list[User]:
     payload = verify_token(token)
     user_id = payload["user_id"]
     return get_users_for(user_id)

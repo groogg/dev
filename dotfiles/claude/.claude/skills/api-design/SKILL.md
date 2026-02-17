@@ -9,7 +9,7 @@ REST API design best practices, HTTP conventions, versioning, error handling, an
 
 ## Core Concepts
 
-### 1. REST Principles
+### REST Principles
 
 RESTful resource design using nouns (not verbs), proper HTTP methods, and hierarchical URL structure.
 
@@ -23,13 +23,14 @@ RESTful resource design using nouns (not verbs), proper HTTP methods, and hierar
 
 ---
 
-### 2. HTTP Status Codes
+### HTTP Status Codes
 
 Proper status code usage for success (2xx), client errors (4xx), and server errors (5xx).
 
 **Common Codes**:
 - **200 OK**: Successful GET/PUT/PATCH
 - **201 Created**: Successful POST (includes Location header)
+- **202 Accepted**: Request accepted for async processing
 - **204 No Content**: Successful DELETE
 - **400 Bad Request**: Invalid input
 - **401 Unauthorized**: Authentication required
@@ -43,7 +44,7 @@ Proper status code usage for success (2xx), client errors (4xx), and server erro
 
 ---
 
-### 3. Error Handling
+### Error Handling
 
 RFC 7807 Problem Details format for consistent, structured error responses.
 
@@ -65,11 +66,12 @@ RFC 7807 Problem Details format for consistent, structured error responses.
 
 ---
 
-### 4. Request/Response Format
+### Request/Response Format
 
 JSON structure conventions for request bodies and response payloads.
 
 **Best Practices**:
+- Define all request and response schemas as Pydantic models
 - Use `snake_case` for JSON keys
 - Include metadata in responses (timestamps, IDs)
 - Consistent field naming across endpoints
@@ -79,7 +81,7 @@ JSON structure conventions for request bodies and response payloads.
 
 ---
 
-### 5. Pagination
+### Pagination
 
 Offset-based and cursor-based pagination strategies for large datasets.
 
@@ -97,7 +99,7 @@ GET /users?cursor=abc123&limit=20
 
 ---
 
-### 6. API Versioning
+### API Versioning
 
 URL path versioning (recommended) and header-based versioning strategies.
 
@@ -116,7 +118,7 @@ URL path versioning (recommended) and header-based versioning strategies.
 
 ---
 
-### 7. Authentication & Authorization
+### Authentication & Authorization
 
 API key and JWT authentication patterns for securing endpoints.
 
@@ -134,22 +136,7 @@ Authorization: Bearer eyJhbGc...
 
 ---
 
-### 8. Rate Limiting
-
-Rate limit headers and strategies to prevent abuse.
-
-**Standard Headers**:
-```http
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1640995200
-```
-
-**See**: `docs/rate-limiting.md` for implementation strategies
-
----
-
-### 9. Advanced Features
+### Advanced Features
 
 CORS configuration, filtering, sorting, and search patterns.
 
@@ -163,15 +150,14 @@ CORS configuration, filtering, sorting, and search patterns.
 
 ---
 
-### 10. Documentation
+### Documentation
 
 OpenAPI/Swagger documentation for API discoverability.
 
 **Auto-Generated** (FastAPI):
 ```python
 @app.get("/users/{user_id}", response_model=User)
-def get_user(user_id: int):
-    """Get user by ID"""
+def get_user(user_id: int) -> User:
     return db.get_user(user_id)
 ```
 
@@ -179,7 +165,7 @@ def get_user(user_id: int):
 
 ---
 
-### 11. Design Patterns
+### Design Patterns
 
 Idempotency, content negotiation, HATEOAS, bulk operations, and webhooks.
 
@@ -203,7 +189,6 @@ Idempotency, content negotiation, HATEOAS, bulk operations, and webhooks.
 - [ ] Include pagination for collections
 - [ ] Add API versioning strategy
 - [ ] Implement authentication
-- [ ] Add rate limiting
 - [ ] Configure CORS (if browser clients)
 - [ ] Generate OpenAPI documentation
 - [ ] Test idempotency for POST/PUT/DELETE
@@ -212,13 +197,12 @@ Idempotency, content negotiation, HATEOAS, bulk operations, and webhooks.
 
 ## Key Takeaways
 
-1. **Resources are nouns**: `/users`, not `/getUsers`
-2. **Use HTTP methods correctly**: GET (read), POST (create), PUT (replace), DELETE (remove)
-3. **Return proper status codes**: 200 (success), 201 (created), 404 (not found), 422 (validation error)
-4. **Structured errors**: Use RFC 7807 format
-5. **Paginate collections**: Offset or cursor-based
-6. **Version your API**: URL path versioning (e.g., `/v1/users`)
-7. **Secure endpoints**: API keys or JWT
-8. **Rate limit**: Prevent abuse
-9. **Document thoroughly**: OpenAPI/Swagger
-10. **Test idempotency**: Safe retries for POST/PUT/DELETE
+- **Resources are nouns**: `/users`, not `/getUsers`
+- **Use HTTP methods correctly**: GET (read), POST (create), PUT (replace), DELETE (remove)
+- **Return proper status codes**: 200 (success), 201 (created), 404 (not found), 422 (validation error)
+- **Structured errors**: Use RFC 7807 format
+- **Paginate collections**: Offset or cursor-based
+- **Version your API**: URL path versioning (e.g., `/v1/users`)
+- **Secure endpoints**: API keys or JWT
+- **Document thoroughly**: OpenAPI/Swagger
+- **Test idempotency**: Safe retries for POST/PUT/DELETE

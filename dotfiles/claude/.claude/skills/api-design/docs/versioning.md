@@ -27,11 +27,11 @@ v1_router = APIRouter(prefix="/v1")
 v2_router = APIRouter(prefix="/v2")
 
 @v1_router.get("/users")
-def list_users_v1():
+def list_users_v1() -> dict:
     return {"version": 1, "users": [...]}
 
 @v2_router.get("/users")
-def list_users_v2():
+def list_users_v2() -> dict:
     return {"version": 2, "users": [...]}
 
 app.include_router(v1_router)

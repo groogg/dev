@@ -27,7 +27,7 @@ GET /users?offset=40&limit=20
 **Implementation**:
 ```python
 @app.get("/users")
-def list_users(page: int = 1, limit: int = 20):
+def list_users(page: int = 1, limit: int = 20) -> dict:
     offset = (page - 1) * limit
     users = db.get_users(offset=offset, limit=limit)
     total = db.count_users()
@@ -71,7 +71,7 @@ GET /users?cursor=abc123&limit=20
 **Implementation**:
 ```python
 @app.get("/users")
-def list_users(cursor: str = None, limit: int = 20):
+def list_users(cursor: str = None, limit: int = 20) -> dict:
     users = db.get_users_after_cursor(cursor, limit)
     next_cursor = users[-1].id if users else None
 

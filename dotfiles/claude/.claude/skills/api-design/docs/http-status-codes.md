@@ -7,6 +7,7 @@
 ```
 200 OK                  - Request succeeded (GET, PUT, PATCH)
 201 Created             - Resource created (POST)
+202 Accepted            - Request accepted for async processing
 204 No Content          - Success, no response body (DELETE)
 ```
 
@@ -14,13 +15,13 @@
 ```python
 # 200 OK - Return resource
 @app.get("/users/{user_id}")
-def get_user(user_id: int):
+def get_user(user_id: int) -> JSONResponse:
     user = db.get_user(user_id)
     return JSONResponse(content=user, status_code=200)
 
 # 201 Created - Return created resource + Location header
 @app.post("/users")
-def create_user(user: User):
+def create_user(user: User) -> JSONResponse:
     created = db.create_user(user)
     return JSONResponse(
         content=created,
@@ -30,7 +31,7 @@ def create_user(user: User):
 
 # 204 No Content - No body needed
 @app.delete("/users/{user_id}")
-def delete_user(user_id: int):
+def delete_user(user_id: int) -> Response:
     db.delete_user(user_id)
     return Response(status_code=204)
 ```
@@ -51,6 +52,7 @@ def delete_user(user_id: int):
 
 ```
 500 Internal Server Error - Unexpected server error
+501 Not Implemented       - Endpoint exists but not yet built
 503 Service Unavailable   - Server temporarily down
 ```
 

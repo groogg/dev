@@ -9,6 +9,8 @@ Python 3.12+ standards for this project. Apply these rules to all Python code.
 
 ## Libraries
 
+Check if `kickstart` offers utilities to solve the problem first. Use it **when applicable** to avoid reinventing the wheel. If incomplete or missing features, supplement with other tools or custom implementations.
+
 | Purpose | Use | Never |
 |---|---|---|
 | Paths (local) | `pathlib` | string concatenation |
@@ -26,9 +28,9 @@ Python 3.12+ standards for this project. Apply these rules to all Python code.
 
 ### Naming & Annotations
 - Full type annotations on all functions, parameters, return values, and class attributes. No exceptions.
-- Descriptive names, no abbreviations
+- Unambiguous names
 - Use names that say what the function does
-- No docstrings unless the function is genuinely non-obvious
+- No docstrings unless the function is genuinely non-obvious or intended for outside use (e.g., SDK)
 - No comments unless the logic is non-obvious
 
 ### Types
@@ -41,7 +43,7 @@ Python 3.12+ standards for this project. Apply these rules to all Python code.
 - Custom exception classes for domain errors
 
 ### Visibility
-- Prefix all class attributes with `_`
+- Prefix all non-public class attributes with `_`
 - Use `@property` only for necessary public access
 - Prefix private methods with `_`
 

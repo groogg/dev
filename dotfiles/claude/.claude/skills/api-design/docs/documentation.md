@@ -17,7 +17,6 @@ app = FastAPI(
 )
 
 class User(BaseModel):
-    """User model"""
     id: int = Field(..., description="Unique user ID")
     email: str = Field(..., description="User email address")
     name: str = Field(..., description="User full name")
@@ -32,12 +31,7 @@ class User(BaseModel):
         404: {"description": "User not found"}
     }
 )
-def get_user(user_id: int):
-    """
-    Get user by ID.
-
-    Returns user object if found, 404 if not found.
-    """
+def get_user(user_id: int) -> User:
     return db.get_user(user_id)
 ```
 

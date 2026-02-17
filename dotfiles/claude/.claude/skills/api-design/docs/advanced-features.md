@@ -44,7 +44,7 @@ def list_users(
     role: str = None,
     status: str = None,
     q: str = None
-):
+) -> list[User]:
     query = db.query(User)
 
     if role:
@@ -73,7 +73,7 @@ GET /posts?sort=-created_at,title
 **Implementation**:
 ```python
 @app.get("/posts")
-def list_posts(sort: str = None):
+def list_posts(sort: str = None) -> list[Post]:
     query = db.query(Post)
 
     if sort:

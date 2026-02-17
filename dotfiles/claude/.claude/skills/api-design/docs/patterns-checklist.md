@@ -89,7 +89,7 @@ POST /webhooks
 ```python
 import requests
 
-def notify_webhook(event_type: str, data: dict):
+def notify_webhook(event_type: str, data: dict) -> None:
     webhooks = db.get_webhooks(event_type)
     for webhook in webhooks:
         requests.post(webhook.url, json={

@@ -35,7 +35,7 @@ class ErrorResponse(BaseModel):
     errors: dict = {}
 
 @app.post("/users")
-def create_user(user: User):
+def create_user(user: User) -> None:
     if not validate_email(user.email):
         raise HTTPException(
             status_code=422,

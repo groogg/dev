@@ -114,5 +114,6 @@ def test_email_validation(input_email: str, is_valid: bool) -> None:
 
 - Mock at the boundary (external APIs, database, filesystem), not internal logic
 - Use `unittest.mock.patch` or `monkeypatch`, prefer `monkeypatch` for simple cases
-- Reusable mocks go in `conftest.py`
+- Keep fixtures in the test file if only used there — avoid jumping between files to understand a test
+- Extract fixtures to `conftest.py` only when shared across multiple test files
 - Never mock the thing you're testing

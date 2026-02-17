@@ -28,7 +28,7 @@ redis_client = redis.Redis()
 def create_payment(
     payment: Payment,
     idempotency_key: str = Header(...)
-):
+) -> dict:
     # Check if we've seen this key before
     cached = redis_client.get(f"idempotency:{idempotency_key}")
     if cached:
@@ -66,7 +66,7 @@ Accept: application/xml   # XML response
 from fastapi import Request
 
 @app.get("/users")
-def get_users(request: Request):
+def get_users(request: Request) -> Response:
     users = db.get_users()
 
     if "application/xml" in request.headers.get("accept", ""):
