@@ -21,12 +21,8 @@ shell:
 
 STOW_PACKAGES := zsh git ghostty nvim zed starship claude
 
-dot:
+dot: claude-settings
 	cd dotfiles && stow -R -t $(HOME) $(STOW_PACKAGES)
-	@if [ -f $(HOME)/.claude/settings.json ] && ! jq -e '.statusLine' $(HOME)/.claude/settings.json >/dev/null 2>&1; then \
-		jq '. + {"statusLine":{"type":"command","command":"bash $(HOME)/.claude/statusline-command.sh"}}' \
-		$(HOME)/.claude/settings.json > /tmp/claude-settings.json && mv /tmp/claude-settings.json $(HOME)/.claude/settings.json; \
-	fi
 
 apple:
 	xcode-select --install || true
@@ -104,10 +100,18 @@ vm-deps:
 vm-dot:
 	cd dotfiles && stow -R -t $(HOME) $(VM_STOW)
 
-setup-vm: vm-deps shell vm-dot uv rust claude-mcp claude-skills
+setup-vm: vm-deps shell vm-dot uv rust claude
+
+claude: claude-skills claude-mcp claude-settings
 
 claude-skills:
 	cd dotfiles && stow -R -t $(HOME) claude
+
+claude-settings:
+	@if [ -f $(HOME)/.claude/settings.json ] && ! jq -e '.statusLine' $(HOME)/.claude/settings.json >/dev/null 2>&1; then \
+		jq '. + {"statusLine":{"type":"command","command":"bash $(HOME)/.claude/statusline-command.sh"}}' \
+		$(HOME)/.claude/settings.json > /tmp/claude-settings.json && mv /tmp/claude-settings.json $(HOME)/.claude/settings.json; \
+	fi
 
 claude-mcp:
 	claude mcp remove --scope user context7 2>/dev/null || true
@@ -120,4 +124,4 @@ ssh-config:
 	grep -q "AddKeysToAgent" $(HOME)/.ssh/config 2>/dev/null || printf "Host *\n\tAddKeysToAgent yes\n\tUseKeyChain yes\n" >> $(HOME)/.ssh/config
 	chmod 600 $(HOME)/.ssh/config
 
-setup-mac: brew shell dot apple uv rust ssh-config claude-mcp
+setup-mac: brew shell dot apple uv rust ssh-config claude
