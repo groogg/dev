@@ -26,3 +26,4 @@ For bug fixes, small modifications, or refactors — just do the work directly. 
 ## Git
 - Always read AGENTS.md before committing to respect project-specific git rules
 - Never add agents co-authored lines to commit messages
+- Write small, descriptive and simple commit messages (ideally 1 liners, if possible)
