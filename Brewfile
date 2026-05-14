@@ -13,9 +13,7 @@ brew 'gh'
 brew 'zoxide'
 brew 'ampcode/tap/ampcode'
 brew 'starship'
-
-# code
-# cask 'pycharm'
+cask 'pycharm'
 # cask 'antigravity'
 cask 'ghostty'
 cask 'visual-studio-code'
