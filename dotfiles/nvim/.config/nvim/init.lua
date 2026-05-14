@@ -264,7 +264,7 @@ require("lazy").setup({
   {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
-    main = "nvim-treesitter.configs",
+    main = "nvim-treesitter",
     opts = {
       ensure_installed = { "python", "lua", "vim", "vimdoc", "markdown", "bash", "json", "yaml", "toml", "sql", "terraform", "hcl", "make", "go", "gomod", "gosum", "typescript", "javascript", "tsx", "html", "css", "dockerfile" },
       highlight = { enable = true },
