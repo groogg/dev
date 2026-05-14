@@ -4,10 +4,8 @@ brew:
 	if ! command -v brew >/dev/null 2>&1; then \
 		echo "Installing Homebrew..."; \
 		/bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
-	else \
-		echo "Homebrew already installed"; \
-	fi
-
+	fi; \
+	eval "$$(command -v brew >/dev/null 2>&1 && brew shellenv || /opt/homebrew/bin/brew shellenv)"; \
 	brew bundle
 
 .PHONY: shell
@@ -19,7 +17,7 @@ shell:
 		sudo chsh -s $$(which zsh) $$(whoami); \
 	fi
 
-STOW_PACKAGES := zsh git ghostty nvim zed starship claude
+STOW_PACKAGES := zsh git ghostty starship claude
 
 dot: claude-settings
 	cd dotfiles && stow -R -t $(HOME) $(STOW_PACKAGES)
@@ -38,15 +36,9 @@ rust:
 		curl -sSf https://sh.rustup.rs | sh -s -- -y; \
 	fi
 
-nvim-clean:
-	rm -rf $(HOME)/.config/nvim
-	rm -rf $(HOME)/.local/share/nvim
-	rm -rf $(HOME)/.local/state/nvim
-	rm -rf $(HOME)/.cache/nvim
+LINUX_STOW := zsh git starship
 
-VM_STOW := zsh git nvim starship
-
-vm-deps:
+linux-deps:
 	sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
 	sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade git stow zsh make ripgrep curl unzip gcc
 
@@ -57,14 +49,6 @@ vm-deps:
 		curl -fsSL -o /tmp/fzf.tar.gz https://github.com/junegunn/fzf/releases/latest/download/fzf-$$ver-linux_$$arch.tar.gz; \
 		sudo tar -xzf /tmp/fzf.tar.gz -C /usr/local/bin; \
 		rm /tmp/fzf.tar.gz; \
-	fi
-
-	# neovim (need >= 0.10)
-	if ! nvim --version 2>/dev/null | head -1 | grep -qE '0\.(1[0-9]|[2-9][0-9])|[1-9]+\.'; then \
-		arch=$$(uname -m | sed 's/aarch64/arm64/'); \
-		curl -fsSL -o /tmp/nvim.tar.gz https://github.com/neovim/neovim/releases/latest/download/nvim-linux-$$arch.tar.gz; \
-		sudo tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1; \
-		rm /tmp/nvim.tar.gz; \
 	fi
 
 	# gh cli
@@ -97,10 +81,10 @@ vm-deps:
 		curl -fsSL https://claude.ai/install.sh | bash; \
 	fi
 
-vm-dot:
-	cd dotfiles && stow -R -t $(HOME) $(VM_STOW)
+linux-dot:
+	cd dotfiles && stow -R -t $(HOME) $(LINUX_STOW)
 
-setup-vm: vm-deps shell vm-dot uv rust claude
+setup-linux: linux-deps shell linux-dot uv rust claude
 
 claude: claude-skills claude-mcp claude-settings
 
@@ -117,7 +101,7 @@ claude-mcp:
 	claude mcp remove --scope user context7 2>/dev/null || true
 	claude mcp remove --scope user serena 2>/dev/null || true
 	claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp
-	claude mcp add --scope user serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context=claude-code --project-from-cwd --open-web-dashboard false
+	claude mcp add --scope user serena -- $(HOME)/.local/bin/uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context=claude-code --project-from-cwd --open-web-dashboard false
 
 ssh-config:
 	mkdir -p $(HOME)/.ssh

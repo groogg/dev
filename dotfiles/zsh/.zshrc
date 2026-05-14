@@ -53,7 +53,7 @@ po() {
 
 dev() {
   case "$1" in
-    init)
+    project)
       ln -sf ~/dev/AGENTS.md ./AGENTS.md
       echo "Linked AGENTS.md"
       mkdir -p .vscode
@@ -62,21 +62,31 @@ dev() {
       uvx --from git+https://github.com/oraios/serena serena project create "$(pwd)"
       echo "Initialized Serena project"
       ;;
-    edit)
-      nvim ~/dev
-      ;;
-    setup)
+    install)
       echo "Select environment:"
       echo "  1) macOS (default)"
-      echo "  2) VM"
+      echo "  2) Linux"
       printf "Choice: " && read choice
       if [ "$choice" = "2" ]; then
-        make -C ~/dev setup-vm
+        make -C ~/dev setup-linux
       else
         make -C ~/dev setup-mac
       fi
       ;;
-    ssh-key)
+    sync)
+      echo "Select environment:"
+      echo "  1) macOS (default)"
+      echo "  2) Linux"
+      printf "Choice: " && read choice
+      if [ "$choice" = "2" ]; then
+        make -C ~/dev linux-dot
+      else
+        make -C ~/dev dot
+      fi
+      source ~/.zshrc
+      echo "Dotfiles re-stowed and shell reloaded"
+      ;;
+    key)
       printf "Key name: " && read name
       ssh-keygen -t ed25519 -f ~/.ssh/$name
       eval "$(ssh-agent -s)"
@@ -84,7 +94,7 @@ dev() {
       echo "Public key:"
       cat ~/.ssh/$name.pub
       ;;
-    git-setup)
+    identity)
       printf "Name: " && read name
       printf "Git email: " && read email
       printf "Directory (e.g. ~/work): " && read dir
@@ -106,20 +116,7 @@ EOF
       mkdir -p "$dir"
       echo "Done! Clone repos into $dir/"
       ;;
-    source)
-      echo "Select environment:"
-      echo "  1) macOS (default)"
-      echo "  2) VM"
-      printf "Choice: " && read choice
-      if [ "$choice" = "2" ]; then
-        make -C ~/dev vm-dot
-      else
-        make -C ~/dev dot
-      fi
-      source ~/.zshrc
-      echo "Dotfiles re-stowed and shell reloaded"
-      ;;
-    *) echo "Usage: dev {init|edit|setup|source|ssh-key|git-setup}" ;;
+    *) echo "Usage: dev {project|install|sync|key|identity}" ;;
   esac
 }
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
