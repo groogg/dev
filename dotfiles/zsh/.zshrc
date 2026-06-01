@@ -99,7 +99,12 @@ dev() {
       printf "Git email: " && read email
       printf "Directory (e.g. ~/work): " && read dir
       dir="${dir/#\~/$HOME}"
-      ssh-keygen -t ed25519 -f ~/.ssh/$name
+      printf "Key type [ed25519/rsa] (default: ed25519): " && read keytype
+      if [[ "$keytype" == "rsa" ]]; then
+        ssh-keygen -t rsa -b 4096 -f ~/.ssh/$name
+      else
+        ssh-keygen -t ed25519 -f ~/.ssh/$name
+      fi
       eval "$(ssh-agent -s)"
       ssh-add ~/.ssh/$name
       echo "Public key:"
@@ -116,7 +121,38 @@ EOF
       mkdir -p "$dir"
       echo "Done! Clone repos into $dir/"
       ;;
-    *) echo "Usage: dev {project|install|sync|key|identity}" ;;
+    identity-remove)
+      identities=(${(f)"$(ls ~/.gitconfig-* 2>/dev/null | sed 's|.*\.gitconfig-||')"})
+      if [[ ${#identities[@]} -eq 0 ]]; then
+        echo "No identities found."
+        return 1
+      fi
+      echo "Select identity to remove:"
+      for i in {1..${#identities[@]}}; do
+        echo "  $i) ${identities[$i]}"
+      done
+      printf "Choice: " && read choice
+      if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#identities[@]} )); then
+        name="${identities[$choice]}"
+      elif (( ${identities[(Ie)$choice]} )); then
+        name="$choice"
+      else
+        echo "Invalid choice."
+        return 1
+      fi
+      printf "Remove identity '$name'? This deletes the SSH key and git config. [y/N]: " && read confirm
+      if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "Cancelled."
+        return 0
+      fi
+      rm -f ~/.ssh/$name ~/.ssh/$name.pub ~/.gitconfig-$name
+      if [[ -f ~/.gitconfig-local ]]; then
+        # Remove the includeIf block referencing this identity (2-line block)
+        perl -i -0pe "s/\n\[includeIf [^\]]*\]\n\tpath = ~\/\.gitconfig-$name//g" ~/.gitconfig-local
+      fi
+      echo "Identity '$name' removed."
+      ;;
+    *) echo "Usage: dev {project|install|sync|key|identity|identity-remove}" ;;
   esac
 }
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.

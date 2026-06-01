@@ -1,5 +1,6 @@
 export PATH := $(HOME)/.local/bin:$(PATH)
 
+.PHONY: brew
 brew:
 	if ! command -v brew >/dev/null 2>&1; then \
 		echo "Installing Homebrew..."; \
@@ -17,20 +18,24 @@ shell:
 		sudo chsh -s $$(which zsh) $$(whoami); \
 	fi
 
-STOW_PACKAGES := zsh git ghostty starship claude
+STOW_PACKAGES := zsh git ghostty starship agents
 
-dot: claude-settings
+.PHONY: dot
+dot:
 	cd dotfiles && stow -R -t $(HOME) $(STOW_PACKAGES)
 
+.PHONY: apple
 apple:
 	xcode-select --install || true
 	softwareupdate --install rosetta
 
+.PHONY: uv
 uv:
 	if ! command -v uv >/dev/null 2>&1; then \
 		curl -LsSf https://astral.sh/uv/install.sh | sh; \
 	fi
 
+.PHONY: rust
 rust:
 	if ! command -v rustc >/dev/null 2>&1; then \
 		curl -sSf https://sh.rustup.rs | sh -s -- -y; \
@@ -38,6 +43,7 @@ rust:
 
 LINUX_STOW := zsh git starship
 
+.PHONY: linux-deps
 linux-deps:
 	sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
 	sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade git stow zsh make ripgrep curl unzip gcc
@@ -81,31 +87,40 @@ linux-deps:
 		curl -fsSL https://claude.ai/install.sh | bash; \
 	fi
 
+	# antigravity cli
+	if ! command -v agy >/dev/null 2>&1; then \
+		curl -fsSL https://antigravity.google/cli/install.sh | bash; \
+	fi
+
+.PHONY: linux-dot
 linux-dot:
 	cd dotfiles && stow -R -t $(HOME) $(LINUX_STOW)
 
+.PHONY: setup-linux
 setup-linux: linux-deps shell linux-dot uv rust claude
 
-claude: claude-skills claude-mcp claude-settings
+.PHONY: claude
+claude: claude-mcp
+	ln -sfn $(HOME)/.agents/skills $(HOME)/.claude/skills
 
-claude-skills:
-	cd dotfiles && stow -R -t $(HOME) claude
-
-claude-settings:
-	@if [ -f $(HOME)/.claude/settings.json ] && ! jq -e '.statusLine' $(HOME)/.claude/settings.json >/dev/null 2>&1; then \
-		jq '. + {"statusLine":{"type":"command","command":"bash $(HOME)/.claude/statusline-command.sh"}}' \
-		$(HOME)/.claude/settings.json > /tmp/claude-settings.json && mv /tmp/claude-settings.json $(HOME)/.claude/settings.json; \
-	fi
-
+.PHONY: claude-mcp
 claude-mcp:
 	claude mcp remove --scope user context7 2>/dev/null || true
 	claude mcp remove --scope user serena 2>/dev/null || true
 	claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp
 	claude mcp add --scope user serena -- $(HOME)/.local/bin/uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context=claude-code --project-from-cwd --open-web-dashboard false
 
+.PHONY: ssh-config
 ssh-config:
 	mkdir -p $(HOME)/.ssh
 	grep -q "AddKeysToAgent" $(HOME)/.ssh/config 2>/dev/null || printf "Host *\n\tAddKeysToAgent yes\n\tUseKeyChain yes\n" >> $(HOME)/.ssh/config
 	chmod 600 $(HOME)/.ssh/config
 
-setup-mac: brew shell dot apple uv rust ssh-config claude
+.PHONY: antigravity
+antigravity:
+	cd dotfiles && stow -R -t $(HOME) gemini
+	mkdir -p $(HOME)/.gemini
+	ln -sfn $(HOME)/.agents/skills $(HOME)/.gemini/skills
+
+.PHONY: setup-mac
+setup-mac: brew shell dot apple uv rust ssh-config claude antigravity

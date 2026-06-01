@@ -9,15 +9,17 @@ brew 'ripgrep'
 brew 'fd'
 brew 'gh'
 brew 'zoxide'
-brew 'ampcode/tap/ampcode'
 brew 'starship'
-cask 'pycharm'
-# cask 'antigravity'
 cask 'ghostty'
-cask 'visual-studio-code'
-# cask 'zed'
-cask 'claude-code'
 cask 'docker-desktop'
+# cask 'pycharm'
+cask 'antigravity-ide'
+cask 'visual-studio-code'
+
+# agentic
+cask 'antigravity'
+cask 'antigravity-cli'
+cask 'claude-code'
 
 # fonts
 cask 'font-jetbrains-mono-nerd-font'

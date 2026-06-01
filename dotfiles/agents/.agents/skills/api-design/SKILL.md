@@ -19,7 +19,7 @@ RESTful resource design using nouns (not verbs), proper HTTP methods, and hierar
 - Hierarchical relationships: `/users/123/posts` for related resources
 - Keep URLs shallow (max 3 levels)
 
-**See**: `docs/rest-principles.md` for detailed examples and patterns
+**See**: `references/rest-principles.md` for detailed examples and patterns
 
 ---
 
@@ -40,7 +40,7 @@ Proper status code usage for success (2xx), client errors (4xx), and server erro
 - **429 Too Many Requests**: Rate limit exceeded
 - **500 Internal Server Error**: Server failure
 
-**See**: `docs/http-status-codes.md` for complete reference and examples
+**See**: `references/http-status-codes.md` for complete reference and examples
 
 ---
 
@@ -62,7 +62,7 @@ RFC 7807 Problem Details format for consistent, structured error responses.
 }
 ```
 
-**See**: `docs/error-handling.md` for implementation patterns and best practices
+**See**: `references/error-handling.md` for implementation patterns and best practices
 
 ---
 
@@ -77,7 +77,7 @@ JSON structure conventions for request bodies and response payloads.
 - Consistent field naming across endpoints
 - Clear data types and structures
 
-**See**: `docs/request-response-format.md` for detailed examples
+**See**: `references/request-response-format.md` for detailed examples
 
 ---
 
@@ -95,7 +95,7 @@ GET /users?page=2&limit=20
 GET /users?cursor=abc123&limit=20
 ```
 
-**See**: `docs/pagination.md` for implementation details and trade-offs
+**See**: `references/pagination.md` for implementation details and trade-offs
 
 ---
 
@@ -114,7 +114,7 @@ URL path versioning (recommended) and header-based versioning strategies.
 - New required fields
 - Changed data types
 
-**See**: `docs/versioning.md` for migration strategies and deprecation policies
+**See**: `references/versioning.md` for migration strategies and deprecation policies
 
 ---
 
@@ -132,7 +132,7 @@ Authorization: Bearer sk_live_abc123...
 Authorization: Bearer eyJhbGc...
 ```
 
-**See**: `docs/authentication.md` for implementation patterns
+**See**: `references/authentication.md` for implementation patterns
 
 ---
 
@@ -146,7 +146,7 @@ CORS configuration, filtering, sorting, and search patterns.
 - Multi-field sorting
 - Full-text search
 
-**See**: `docs/advanced-features.md` for detailed patterns
+**See**: `references/advanced-features.md` for detailed patterns
 
 ---
 
@@ -161,7 +161,7 @@ def get_user(user_id: int) -> User:
     return db.get_user(user_id)
 ```
 
-**See**: `docs/documentation.md` for OpenAPI specifications
+**See**: `references/documentation.md` for OpenAPI specifications
 
 ---
 
@@ -176,7 +176,7 @@ Idempotency, content negotiation, HATEOAS, bulk operations, and webhooks.
 - Bulk operations for batch processing
 - Webhooks for event notifications
 
-**See**: `docs/idempotency-content-negotiation.md` and `docs/patterns-checklist.md`
+**See**: `references/idempotency-content-negotiation.md` and `references/patterns-checklist.md`
 
 ---
 

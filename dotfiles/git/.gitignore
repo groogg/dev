@@ -5,6 +5,7 @@
 .tool-versions
 .idea
 .claude
+.antigravitycli
 .serena
 .vscode
 AGENTS.md
