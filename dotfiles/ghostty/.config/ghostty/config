@@ -1,6 +1,5 @@
-theme = TokyoNight
+theme = Batman
 font-size=16
-background-opacity=0.75
-background-blur = true
-
+# background-opacity=0.75
+# background-blur = true
 shell-integration = zsh
