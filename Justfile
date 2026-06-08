@@ -81,7 +81,7 @@ _shell:
     fi
 
 _dot:
-    cd {{ justfile_directory() }}/dotfiles && stow -R -t {{ env_var('HOME') }} {{ stow_packages }}
+    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
 
 _apple:
     xcode-select --install || true
@@ -167,6 +167,6 @@ _antigravity:
     if ! command -v agy >/dev/null 2>&1; then
         curl -fsSL https://antigravity.google/cli/install.sh | bash
     fi
-    cd {{ justfile_directory() }}/dotfiles && stow -R -t {{ env_var('HOME') }} gemini
-    mkdir -p ~/.gemini
-    ln -sfn {{ justfile_directory() }}/agents/skills ~/.gemini/skills
+    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} gemini
+    mkdir -p ~/.gemini/config
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.gemini/config/skills
