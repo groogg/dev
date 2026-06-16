@@ -7,7 +7,7 @@ cask 'visual-studio-code'
 # agentic
 cask 'antigravity'
 cask 'antigravity-cli'
-cask 'claude-code'
+# cask 'claude-code'
 
 # fonts
 cask 'font-jetbrains-mono-nerd-font'

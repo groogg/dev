@@ -49,6 +49,64 @@ key:
     ssh-add ~/.ssh/$name
     cat ~/.ssh/$name.pub
 
+# Symlink skills from a source directory into Claude and/or Gemini
+skills:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Prompt for source path
+    printf "Path to skills directory: " && read -e src
+    src="${src/#\~/$HOME}"
+
+    # Validate source
+    if [[ ! -d "$src" ]]; then
+        echo "Error: '$src' is not a directory." >&2
+        exit 1
+    fi
+
+    # Check there are subdirectories to link
+    dirs=("$src"/*/)
+    if [[ ${#dirs[@]} -eq 0 || ! -d "${dirs[0]}" ]]; then
+        echo "Error: no skill subdirectories found in '$src'." >&2
+        exit 1
+    fi
+
+    # Pick destination(s)
+    dest=$(printf 'claude\ngemini\n' | fzf -m --header "Select destination(s) (Tab to multi-select)")
+    [[ -z "$dest" ]] && echo "No destination selected." && exit 0
+
+    claude_dir="$HOME/.claude/skills"
+    gemini_dir="$HOME/.gemini/config/skills"
+
+    for target in $dest; do
+        if [[ "$target" == "claude" ]]; then
+            dest_dir="$claude_dir"
+        else
+            dest_dir="$gemini_dir"
+        fi
+
+        mkdir -p "$dest_dir"
+        count=0
+
+        for skill in "$src"/*/; do
+            name=$(basename "$skill")
+            link="$dest_dir/$name"
+
+            # Remove existing entry (directory or old symlink)
+            if [[ -e "$link" || -L "$link" ]]; then
+                rm -rf "$link"
+                echo "  replaced: $name -> $target"
+            else
+                echo "  linked:   $name -> $target"
+            fi
+
+            ln -s "$(cd "$skill" && pwd)" "$link"
+            count=$((count + 1))
+        done
+
+        echo "✓ $count skill(s) symlinked into $dest_dir"
+    done
+
 # --- Internal ---
 
 _setup-mac: _configure _brew _brew-personal _shell _dot _apple _uv _rust _ssh-config _vscode _agentic
