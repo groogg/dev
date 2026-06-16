@@ -213,12 +213,35 @@ _vscode:
 _ssh-config:
     #!/usr/bin/env bash
     mkdir -p ~/.ssh
-    if [[ "{{ os }}" == "Darwin" ]]; then
-        grep -q "IdentityAgent" ~/.ssh/config 2>/dev/null || printf "Host *\n\tIdentityAgent \"~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh\"\n" >> ~/.ssh/config
-    else
-        grep -q "AddKeysToAgent" ~/.ssh/config 2>/dev/null || printf "Host *\n\tAddKeysToAgent yes\n" >> ~/.ssh/config
-    fi
+    touch ~/.ssh/config
     chmod 600 ~/.ssh/config
+
+    marker_begin="# BEGIN dev-managed"
+    marker_end="# END dev-managed"
+
+    # Remove previously managed block so we can re-write it cleanly
+    if grep -q "$marker_begin" ~/.ssh/config; then
+        sed -i '' "/$marker_begin/,/$marker_end/d" ~/.ssh/config
+    fi
+
+    if [[ "{{ os }}" == "Darwin" ]]; then
+        # Skip if IdentityAgent is already configured outside our block
+        if grep -q "IdentityAgent" ~/.ssh/config 2>/dev/null; then
+            echo "Secretive IdentityAgent already configured, skipping."
+        else
+            printf '\n%s\nHost *\n\tIdentityAgent "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"\n%s\n' \
+                "$marker_begin" "$marker_end" >> ~/.ssh/config
+            echo "Secretive IdentityAgent added to ~/.ssh/config"
+        fi
+    else
+        if grep -q "AddKeysToAgent" ~/.ssh/config 2>/dev/null; then
+            echo "AddKeysToAgent already configured, skipping."
+        else
+            printf '\n%s\nHost *\n\tAddKeysToAgent yes\n%s\n' \
+                "$marker_begin" "$marker_end" >> ~/.ssh/config
+            echo "AddKeysToAgent added to ~/.ssh/config"
+        fi
+    fi
 
 _antigravity:
     #!/usr/bin/env bash
