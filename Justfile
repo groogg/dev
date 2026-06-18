@@ -12,8 +12,8 @@ install:
     #!/usr/bin/env bash
     [[ "{{ os }}" == "Darwin" ]] && just _setup-mac || just _setup-linux
 
-# Re-stow dotfiles for current OS
-sync: _dot
+# Re-stow dotfiles and update skill submodules
+sync: _dot _submodules
 
 # Prompt for git name and email if not set
 _configure:
@@ -107,6 +107,31 @@ skills:
         echo "✓ $count skill(s) symlinked into $dest_dir"
     done
 
+_submodules:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git -C {{ justfile_directory() }} submodule update --init --remote
+
+    vendor="{{ justfile_directory() }}/agents/vendor/mattpocock-skills/skills"
+    dest="{{ justfile_directory() }}/agents/skills"
+
+    for group in engineering productivity; do
+        [[ ! -d "$vendor/$group" ]] && continue
+        for skill in "$vendor/$group"/*/; do
+            name=$(basename "$skill")
+            link="$dest/$name"
+            [[ -d "$skill" ]] || continue
+            [[ ! -f "$skill/SKILL.md" ]] && continue
+            if [[ -L "$link" ]]; then
+                rm "$link"
+            elif [[ -e "$link" ]]; then
+                continue  # don't clobber local skills
+            fi
+            ln -s "$skill" "$link"
+        done
+    done
+    echo "✓ Vendor skills symlinked"
+
 # --- Internal ---
 
 _setup-mac: _configure _brew _brew-personal _shell _dot _apple _uv _rust _ssh-config _vscode _agentic
@@ -195,7 +220,7 @@ _linux-deps:
     fi
 
 
-_claude:
+_claude: _submodules
     #!/usr/bin/env bash
     if ! command -v claude >/dev/null 2>&1; then
         curl -fsSL https://claude.ai/install.sh | bash
@@ -243,7 +268,7 @@ _ssh-config:
         fi
     fi
 
-_antigravity:
+_antigravity: _submodules
     #!/usr/bin/env bash
     if ! command -v agy >/dev/null 2>&1; then
         curl -fsSL https://antigravity.google/cli/install.sh | bash
