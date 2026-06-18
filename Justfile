@@ -112,7 +112,7 @@ _submodules:
     set -euo pipefail
     git -C {{ justfile_directory() }} submodule update --init --remote
 
-    vendor="{{ justfile_directory() }}/agents/vendor/mattpocock-skills/skills"
+    vendor="{{ justfile_directory() }}/agents/skills/vendor/mattpocock-skills/skills"
     dest="{{ justfile_directory() }}/agents/skills"
 
     for group in engineering productivity; do

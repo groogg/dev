@@ -1,4 +1,4 @@
-[submodule "agents/vendor/mattpocock-skills"]
-	path = agents/vendor/mattpocock-skills
+[submodule "agents/skills/vendor/mattpocock-skills"]
+	path = agents/skills/vendor/mattpocock-skills
 	url = https://github.com/mattpocock/skills.git
 	branch = main
