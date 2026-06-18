@@ -1,16 +1,17 @@
 export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
-os := shell('uname')
-stow_packages := if os == "Darwin" { "zsh git ghostty starship" } else { "zsh git starship" }
+stow_packages := if os() == "macos" { "zsh git ghostty vscode starship" } else { "zsh git starship" }
 
 # Show available recipes
 default:
     @just --list --unsorted
 
 # Full setup for current OS
-install:
-    #!/usr/bin/env bash
-    [[ "{{ os }}" == "Darwin" ]] && just _setup-mac || just _setup-linux
+[macos]
+install: _setup-mac
+
+[linux]
+install: _setup-linux
 
 # Re-stow dotfiles and update skill submodules
 sync: _dot _submodules
@@ -22,8 +23,12 @@ _configure:
        git config -f ~/.gitconfig-local user.email >/dev/null 2>&1; then
         echo "Git user already configured, skipping."
     else
-        printf "Git name: " && read name
-        printf "Git email: " && read email
+        printf "Git name: " && read -r name
+        printf "Git email: " && read -r email
+        if [[ -z "$name" || -z "$email" ]]; then
+            echo "Error: name and email must not be empty."
+            exit 1
+        fi
         git config -f ~/.gitconfig-local user.name "$name"
         git config -f ~/.gitconfig-local user.email "$email"
         echo "Git user configured."
@@ -31,8 +36,12 @@ _configure:
 
 _brew-personal:
     #!/usr/bin/env bash
-    printf "Install personal apps? [y/N] " && read answer
-    [[ "$answer" =~ ^[Yy]$ ]] && brew bundle --file {{ justfile_directory() }}/Brewfile.personal || echo "Skipping personal apps."
+    printf "Install personal apps? [y/N] " && read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        brew bundle --file {{ justfile_directory() }}/Brewfile.personal
+    else
+        echo "Skipping personal apps."
+    fi
 
 # Set up current directory as a dev project
 project:
@@ -134,16 +143,9 @@ _submodules:
 
 # --- Internal ---
 
-_setup-mac: _configure _brew _brew-personal _shell _dot _apple _uv _rust _ssh-config _vscode _agentic
+_setup-mac: _configure _brew _brew-personal _shell _dot _uv _rust _ssh-config _claude _antigravity _macos
 
-_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _agentic
-
-_agentic:
-    #!/usr/bin/env bash
-    selected=$(printf 'claude\nantigravity\n' | fzf -m --header "Select agentic tools to set up (Tab to multi-select)")
-    [[ -z "$selected" ]] && exit 0
-    [[ "$selected" == *claude* ]] && just _claude
-    [[ "$selected" == *antigravity* ]] && just _antigravity
+_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _claude _antigravity
 
 _brew:
     #!/usr/bin/env bash
@@ -151,13 +153,13 @@ _brew:
         echo "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    eval "$(command -v brew >/dev/null 2>&1 && brew shellenv || /opt/homebrew/bin/brew shellenv)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
     brew bundle --file {{ justfile_directory() }}/Brewfile
 
 _shell:
     #!/usr/bin/env bash
     if [ ! -d ~/.oh-my-zsh ]; then
-        sh -c "RUNZSH=no KEEP_ZSHRC=yes $(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
     if [ "$SHELL" != "$(which zsh)" ]; then
         sudo chsh -s "$(which zsh)" "$(whoami)"
@@ -165,10 +167,6 @@ _shell:
 
 _dot:
     cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
-
-_apple:
-    xcode-select --install || true
-    softwareupdate --install rosetta
 
 _uv:
     #!/usr/bin/env bash
@@ -213,7 +211,7 @@ _linux-deps:
 
     if ! command -v node >/dev/null 2>&1; then
         arch=$(uname -m | sed 's/x86_64/x64/' | sed 's/aarch64/arm64/')
-        node_file=$(curl -fsSL https://nodejs.org/dist/latest/ | grep -oP "node-v[\d.]+-linux-${arch}\.tar\.xz" | head -1)
+        node_file=$(curl -fsSL https://nodejs.org/dist/latest/ | grep -oE "node-v[0-9.]+-linux-${arch}\.tar\.xz" | head -1)
         curl -fsSL -o /tmp/node.tar.xz "https://nodejs.org/dist/latest/${node_file}"
         sudo tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1
         rm /tmp/node.tar.xz
@@ -229,43 +227,18 @@ _claude: _submodules
     ln -sfn {{ justfile_directory() }}/agents/skills ~/.claude/skills
     ln -sfn {{ justfile_directory() }}/agents/statusline.sh ~/.claude/statusline.sh
 
-_vscode:
-    #!/usr/bin/env bash
-    dest="$HOME/Library/Application Support/Code/User/settings.json"
-    mkdir -p "$(dirname "$dest")"
-    ln -sf {{ justfile_directory() }}/dotfiles/vscode/settings.json "$dest"
 
 _ssh-config:
     #!/usr/bin/env bash
     mkdir -p ~/.ssh
     touch ~/.ssh/config
     chmod 600 ~/.ssh/config
-
-    marker_begin="# BEGIN dev-managed"
-    marker_end="# END dev-managed"
-
-    # Remove previously managed block so we can re-write it cleanly
-    if grep -q "$marker_begin" ~/.ssh/config; then
-        sed -i '' "/$marker_begin/,/$marker_end/d" ~/.ssh/config
-    fi
-
-    if [[ "{{ os }}" == "Darwin" ]]; then
-        # Skip if IdentityAgent is already configured outside our block
-        if grep -q "IdentityAgent" ~/.ssh/config 2>/dev/null; then
-            echo "Secretive IdentityAgent already configured, skipping."
-        else
-            printf '\n%s\nHost *\n\tIdentityAgent "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"\n%s\n' \
-                "$marker_begin" "$marker_end" >> ~/.ssh/config
-            echo "Secretive IdentityAgent added to ~/.ssh/config"
-        fi
+    if [[ "{{ os() }}" == "macos" ]]; then
+        grep -q "IdentityAgent" ~/.ssh/config 2>/dev/null || \
+            printf '\nHost *\n\tIdentityAgent "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"\n' >> ~/.ssh/config
     else
-        if grep -q "AddKeysToAgent" ~/.ssh/config 2>/dev/null; then
-            echo "AddKeysToAgent already configured, skipping."
-        else
-            printf '\n%s\nHost *\n\tAddKeysToAgent yes\n%s\n' \
-                "$marker_begin" "$marker_end" >> ~/.ssh/config
-            echo "AddKeysToAgent added to ~/.ssh/config"
-        fi
+        grep -q "AddKeysToAgent" ~/.ssh/config 2>/dev/null || \
+            printf '\nHost *\n\tAddKeysToAgent yes\n' >> ~/.ssh/config
     fi
 
 _antigravity: _submodules
@@ -276,3 +249,33 @@ _antigravity: _submodules
     cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} gemini
     mkdir -p ~/.gemini/config
     ln -sfn {{ justfile_directory() }}/agents/skills ~/.gemini/config/skills
+
+_macos:
+    #!/usr/bin/env bash
+    plist="$HOME/Library/Preferences/com.apple.dock"
+
+    # Clear existing apps and folders
+    defaults delete "$plist" persistent-apps 2>/dev/null || true
+    defaults delete "$plist" persistent-others 2>/dev/null || true
+    defaults write "$plist" show-recents -bool false
+
+    # Add apps
+    apps=(
+        "/Applications/Dia.app"
+        "/Applications/Antigravity.app"
+        "/Applications/Bitwarden.app"
+        "/Applications/Slack.app"
+        "/System/Applications/Messages.app"
+        "/Applications/Spotify.app"
+    )
+    for app in "${apps[@]}"; do
+        defaults write "$plist" persistent-apps -array-add \
+            "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"
+    done
+
+    killall Dock
+
+    # Login items
+    for app in Secretive Flux LookAway; do
+        osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"/Applications/$app.app\", hidden:false}" 2>/dev/null || true
+    done
