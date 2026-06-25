@@ -226,6 +226,12 @@ _claude: _submodules
     mkdir -p ~/.claude
     ln -sfn {{ justfile_directory() }}/agents/skills ~/.claude/skills
     ln -sfn {{ justfile_directory() }}/agents/statusline.sh ~/.claude/statusline.sh
+    # Register the status line in settings.json (merge, don't clobber existing keys)
+    settings="$HOME/.claude/settings.json"
+    [[ -f "$settings" ]] || echo '{}' > "$settings"
+    tmp=$(mktemp)
+    jq '.statusLine = {type: "command", command: "~/.claude/statusline.sh"}' \
+        "$settings" > "$tmp" && mv "$tmp" "$settings"
 
 
 _ssh-config:
