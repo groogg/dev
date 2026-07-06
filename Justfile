@@ -43,8 +43,8 @@ _brew-personal:
         echo "Skipping personal apps."
     fi
 
-# Set up current directory as a dev project
-project:
+# Copy the shared AGENTS.md into the current directory
+init-project:
     #!/usr/bin/env bash
     dest="{{ invocation_directory() }}/AGENTS.md"
     if [[ -e "$dest" ]]; then
@@ -65,8 +65,8 @@ key:
     ssh-add ~/.ssh/$name
     cat ~/.ssh/$name.pub
 
-# Symlink skills from a source directory into selected agent destinations
-skills:
+# Symlink an external skills directory (e.g. a cloned skills repo) into selected agent config dirs
+link-skills:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -229,12 +229,7 @@ _linux-deps:
     fi
 
 
-_agentic: _submodules
-    #!/usr/bin/env bash
-    just _claude
-    just _amp
-    # just _junie
-    # just _antigravity
+_agentic: _claude _amp # _junie _antigravity
 
 _claude: _submodules
     #!/usr/bin/env bash

@@ -57,4 +57,4 @@ dev() {
 }
 
 # Added by Antigravity IDE
-export PATH="/Users/gregg.gilbert/.antigravity-ide/antigravity-ide/bin:$PATH"
+export PATH="$HOME/.antigravity-ide/antigravity-ide/bin:$PATH"
