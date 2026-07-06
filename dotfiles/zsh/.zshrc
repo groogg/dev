@@ -55,3 +55,6 @@ dev() {
   just --justfile ~/dev/Justfile "$@"
   [[ "$1" == "sync" ]] && source ~/.zshrc
 }
+
+# Added by Antigravity IDE
+export PATH="/Users/gregg.gilbert/.antigravity-ide/antigravity-ide/bin:$PATH"

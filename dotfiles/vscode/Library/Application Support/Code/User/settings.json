@@ -1,5 +1,4 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.analysis.typeCheckingMode": "standard",
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
@@ -19,5 +18,8 @@
         "**/.mypy_cache": true,
         "**/.ruff_cache": true,
         "**/*.egg-info": true
-    }
+    },
+    "workbench.iconTheme": "symbols",
+    "workbench.startupEditor": "none",
+    "editor.fontSize": 13
 }

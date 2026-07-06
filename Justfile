@@ -45,7 +45,14 @@ _brew-personal:
 
 # Set up current directory as a dev project
 project:
-    ln -sf {{ justfile_directory() }}/agents/AGENTS.md "{{ invocation_directory() }}/AGENTS.md"
+    #!/usr/bin/env bash
+    dest="{{ invocation_directory() }}/AGENTS.md"
+    if [[ -e "$dest" ]]; then
+        echo "AGENTS.md already exists here, leaving it untouched."
+    else
+        cp {{ justfile_directory() }}/agents/AGENTS.md "$dest"
+        echo "✓ Copied AGENTS.md"
+    fi
 
 # Generate a new SSH key
 key:
@@ -58,7 +65,7 @@ key:
     ssh-add ~/.ssh/$name
     cat ~/.ssh/$name.pub
 
-# Symlink skills from a source directory into Claude and/or Gemini
+# Symlink skills from a source directory into selected agent destinations
 skills:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -81,18 +88,21 @@ skills:
     fi
 
     # Pick destination(s)
-    dest=$(printf 'claude\ngemini\n' | fzf -m --header "Select destination(s) (Tab to multi-select)")
+    dest=$(printf 'claude\ngemini\njunie\namp\n' | fzf -m --header "Select destination(s) (Tab to multi-select)")
     [[ -z "$dest" ]] && echo "No destination selected." && exit 0
 
     claude_dir="$HOME/.claude/skills"
     gemini_dir="$HOME/.gemini/config/skills"
+    junie_dir="$HOME/.junie/skills"
+    amp_dir="$HOME/.config/amp/skills"
 
     for target in $dest; do
-        if [[ "$target" == "claude" ]]; then
-            dest_dir="$claude_dir"
-        else
-            dest_dir="$gemini_dir"
-        fi
+        case "$target" in
+            claude) dest_dir="$claude_dir" ;;
+            gemini) dest_dir="$gemini_dir" ;;
+            junie)  dest_dir="$junie_dir" ;;
+            amp)    dest_dir="$amp_dir" ;;
+        esac
 
         mkdir -p "$dest_dir"
         count=0
@@ -119,7 +129,7 @@ skills:
 _submodules:
     #!/usr/bin/env bash
     set -euo pipefail
-    git -C {{ justfile_directory() }} submodule update --init --remote
+    git -C {{ justfile_directory() }} submodule update --init --remote --single-branch
 
     vendor="{{ justfile_directory() }}/agents/skills/vendor/mattpocock-skills/skills"
     dest="{{ justfile_directory() }}/agents/skills"
@@ -136,16 +146,17 @@ _submodules:
             elif [[ -e "$link" ]]; then
                 continue  # don't clobber local skills
             fi
-            ln -s "$skill" "$link"
+            # relative target so the symlink resolves for anyone who clones the repo
+            ln -s "vendor/mattpocock-skills/skills/$group/$name" "$link"
         done
     done
     echo "✓ Vendor skills symlinked"
 
 # --- Internal ---
 
-_setup-mac: _configure _brew _brew-personal _shell _dot _uv _rust _ssh-config _claude _antigravity _macos
+_setup-mac: _configure _brew _brew-personal _shell _dot _uv _rust _ssh-config _agentic _macos
 
-_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _claude _antigravity
+_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _agentic
 
 _brew:
     #!/usr/bin/env bash
@@ -218,6 +229,13 @@ _linux-deps:
     fi
 
 
+_agentic: _submodules
+    #!/usr/bin/env bash
+    just _claude
+    just _amp
+    # just _junie
+    # just _antigravity
+
 _claude: _submodules
     #!/usr/bin/env bash
     if ! command -v claude >/dev/null 2>&1; then
@@ -252,9 +270,28 @@ _antigravity: _submodules
     if ! command -v agy >/dev/null 2>&1; then
         curl -fsSL https://antigravity.google/cli/install.sh | bash
     fi
-    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} gemini
     mkdir -p ~/.gemini/config
     ln -sfn {{ justfile_directory() }}/agents/skills ~/.gemini/config/skills
+
+_junie: _submodules
+    #!/usr/bin/env bash
+    mkdir -p ~/.junie
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.junie/skills
+
+[macos]
+_amp: _submodules
+    #!/usr/bin/env bash
+    mkdir -p ~/.config/amp
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.config/amp/skills
+
+[linux]
+_amp: _submodules
+    #!/usr/bin/env bash
+    if ! command -v amp >/dev/null 2>&1; then
+        curl -fsSL https://ampcode.com/install.sh | bash
+    fi
+    mkdir -p ~/.config/amp
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.config/amp/skills
 
 _macos:
     #!/usr/bin/env bash
@@ -268,7 +305,8 @@ _macos:
     # Add apps
     apps=(
         "/Applications/Dia.app"
-        "/Applications/Antigravity.app"
+        "/Applications/Visual Studio Code.app"
+        "/Applications/Ghostty.app"
         "/Applications/Bitwarden.app"
         "/Applications/Slack.app"
         "/System/Applications/Messages.app"
@@ -283,5 +321,5 @@ _macos:
 
     # Login items
     for app in Secretive Flux LookAway; do
-        osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"/Applications/$app.app\", hidden:false}" 2>/dev/null || true
+        osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"/Applications/$app.app\", hidden:false}" >/dev/null 2>&1 || true
     done
