@@ -88,20 +88,16 @@ link-skills:
     fi
 
     # Pick destination(s)
-    dest=$(printf 'claude\ngemini\njunie\namp\n' | fzf -m --header "Select destination(s) (Tab to multi-select)")
+    dest=$(printf 'claude\nagents\n' | fzf -m --header "Select destination(s) (Tab to multi-select)")
     [[ -z "$dest" ]] && echo "No destination selected." && exit 0
 
     claude_dir="$HOME/.claude/skills"
-    gemini_dir="$HOME/.gemini/config/skills"
-    junie_dir="$HOME/.junie/skills"
-    amp_dir="$HOME/.config/amp/skills"
+    agents_dir="$HOME/.agents/skills" # shared by pi, amp, and other Agent Skills-standard tools
 
     for target in $dest; do
         case "$target" in
             claude) dest_dir="$claude_dir" ;;
-            gemini) dest_dir="$gemini_dir" ;;
-            junie)  dest_dir="$junie_dir" ;;
-            amp)    dest_dir="$amp_dir" ;;
+            agents) dest_dir="$agents_dir" ;;
         esac
 
         mkdir -p "$dest_dir"
@@ -229,7 +225,7 @@ _linux-deps:
     fi
 
 
-_agentic: _claude _amp # _junie _antigravity
+_agentic: _claude _amp _pi
 
 _claude: _submodules
     #!/usr/bin/env bash
@@ -260,24 +256,11 @@ _ssh-config:
             printf '\nHost *\n\tAddKeysToAgent yes\n' >> ~/.ssh/config
     fi
 
-_antigravity: _submodules
-    #!/usr/bin/env bash
-    if ! command -v agy >/dev/null 2>&1; then
-        curl -fsSL https://antigravity.google/cli/install.sh | bash
-    fi
-    mkdir -p ~/.gemini/config
-    ln -sfn {{ justfile_directory() }}/agents/skills ~/.gemini/config/skills
-
-_junie: _submodules
-    #!/usr/bin/env bash
-    mkdir -p ~/.junie
-    ln -sfn {{ justfile_directory() }}/agents/skills ~/.junie/skills
-
 [macos]
 _amp: _submodules
     #!/usr/bin/env bash
-    mkdir -p ~/.config/amp
-    ln -sfn {{ justfile_directory() }}/agents/skills ~/.config/amp/skills
+    mkdir -p ~/.agents
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.agents/skills
 
 [linux]
 _amp: _submodules
@@ -285,8 +268,16 @@ _amp: _submodules
     if ! command -v amp >/dev/null 2>&1; then
         curl -fsSL https://ampcode.com/install.sh | bash
     fi
-    mkdir -p ~/.config/amp
-    ln -sfn {{ justfile_directory() }}/agents/skills ~/.config/amp/skills
+    mkdir -p ~/.agents
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.agents/skills
+
+_pi: _submodules
+    #!/usr/bin/env bash
+    if ! command -v pi >/dev/null 2>&1; then
+        curl -fsSL https://pi.dev/install.sh | sh
+    fi
+    mkdir -p ~/.agents
+    ln -sfn {{ justfile_directory() }}/agents/skills ~/.agents/skills
 
 _macos:
     #!/usr/bin/env bash

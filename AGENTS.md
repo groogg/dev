@@ -11,7 +11,7 @@ driven by `just` (wrapped by a `dev` CLI) and GNU `stow`.
 
 - `just install` (or `dev install`) — full setup for the current OS (`_setup-mac` / `_setup-linux`)
 - `just sync` — re-stow dotfiles and update skill submodules
-- `just link-skills` — symlink an external skills directory (e.g. a cloned skills repo) into selected agent destinations (claude, gemini, junie, amp)
+- `just link-skills` — symlink an external skills directory (e.g. a cloned skills repo) into selected agent destinations (claude, agents)
 - `just init-project` — copy `agents/AGENTS.md` into the current directory
 - `just key` — generate a new SSH key (for Linux/non-Secretive setups; on macOS keys are managed by Secretive)
 - `brew bundle --file Brewfile` — install core Homebrew packages
