@@ -322,7 +322,7 @@ _macos:
 
     # Add apps
     apps=(
-        "/Applications/Dia.app"
+        "/Applications/Brave Browser.app"
         "/Applications/Visual Studio Code.app"
         "/Applications/Ghostty.app"
         "/Applications/Bitwarden.app"
