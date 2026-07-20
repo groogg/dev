@@ -1,6 +1,6 @@
 export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
-stow_packages := if os() == "macos" { "zsh git ghostty vscode starship" } else { "zsh git starship" }
+stow_packages := if os() == "macos" { "zsh git ghostty vscode nvim starship" } else { "zsh git nvim starship" }
 
 # Show available recipes
 default:
@@ -150,9 +150,18 @@ _submodules:
 
 # --- Internal ---
 
-_setup-mac: _configure _brew _brew-personal _shell _dot _uv _rust _ssh-config _agentic _macos
+_setup-mac: _configure _brew _brew-personal _shell _dot _uv _rust _ssh-config _hooks _agentic _macos
 
-_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _agentic
+_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _hooks _agentic-optional
+
+_agentic-optional:
+    #!/usr/bin/env bash
+    printf "Install AI coding agents? [y/N] " && read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        just --justfile {{ justfile() }} _agentic
+    else
+        echo "Skipping AI coding agents."
+    fi
 
 _brew:
     #!/usr/bin/env bash
@@ -174,6 +183,9 @@ _shell:
 
 _dot:
     cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
+
+_hooks:
+    git -C {{ justfile_directory() }} config core.hooksPath .githooks
 
 _uv:
     #!/usr/bin/env bash
@@ -199,6 +211,26 @@ _linux-deps:
         curl -fsSL -o /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/latest/download/fzf-${ver}-linux_${arch}.tar.gz"
         sudo tar -xzf /tmp/fzf.tar.gz -C /usr/local/bin
         rm /tmp/fzf.tar.gz
+    fi
+
+    if ! command -v gitleaks >/dev/null 2>&1; then
+        arch=$(uname -m | sed 's/x86_64/x64/' | sed 's/aarch64/arm64/')
+        ver=$(curl -fsSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)
+        asset="gitleaks_${ver}_linux_${arch}.tar.gz"
+        curl -fsSL -o "/tmp/${asset}" "https://github.com/gitleaks/gitleaks/releases/latest/download/${asset}"
+        curl -fsSL -o /tmp/gitleaks_checksums.txt "https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_${ver}_checksums.txt"
+        grep "  ${asset}$" /tmp/gitleaks_checksums.txt > /tmp/gitleaks.sha256
+        (cd /tmp && sha256sum -c gitleaks.sha256)
+        sudo tar -xzf "/tmp/${asset}" -C /usr/local/bin gitleaks
+        rm "/tmp/${asset}" /tmp/gitleaks_checksums.txt /tmp/gitleaks.sha256
+    fi
+
+    # Neovim plugins require >= 0.10; distro packages may be older.
+    if ! nvim --version 2>/dev/null | head -1 | grep -qE '0\.(1[0-9]|[2-9][0-9])|[1-9]+\.'; then
+        arch=$(uname -m | sed 's/aarch64/arm64/')
+        curl -fsSL -o /tmp/nvim.tar.gz "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${arch}.tar.gz"
+        sudo tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1
+        rm /tmp/nvim.tar.gz
     fi
 
     if ! command -v gh >/dev/null 2>&1; then

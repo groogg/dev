@@ -21,5 +21,6 @@
     },
     "workbench.iconTheme": "symbols",
     "workbench.startupEditor": "none",
-    "editor.fontSize": 13
+    "editor.fontSize": 13,
+    "files.autoSave": "afterDelay"
 }
