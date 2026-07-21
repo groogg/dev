@@ -13,8 +13,15 @@ install: _setup-mac
 [linux]
 install: _setup-linux
 
-# Re-stow dotfiles and update skill submodules
-sync: _dot _submodules
+# Upgrade installed tools
+[macos]
+update: _brew-update _toolchains-update _submodules
+
+[linux]
+update: _toolchains-update _submodules
+
+# Re-stow dotfiles
+sync: _dot
 
 # Prompt for git name and email if not set
 _configure:
@@ -38,7 +45,7 @@ _brew-personal:
     #!/usr/bin/env bash
     printf "Install personal apps? [y/N] " && read -r answer
     if [[ "$answer" =~ ^[Yy]$ ]]; then
-        brew bundle --file {{ justfile_directory() }}/Brewfile.personal
+        brew bundle --no-upgrade --file {{ justfile_directory() }}/Brewfile.personal
     else
         echo "Skipping personal apps."
     fi
@@ -126,7 +133,17 @@ _submodules:
     #!/usr/bin/env bash
     set -euo pipefail
     git -C {{ justfile_directory() }} submodule update --init --remote --single-branch
+    just --justfile {{ justfile() }} _vendor-links
 
+_submodules-init:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git -C {{ justfile_directory() }} submodule update --init --single-branch
+    just --justfile {{ justfile() }} _vendor-links
+
+_vendor-links:
+    #!/usr/bin/env bash
+    set -euo pipefail
     vendor="{{ justfile_directory() }}/agents/skills/vendor/mattpocock-skills/skills"
     dest="{{ justfile_directory() }}/agents/skills"
 
@@ -170,7 +187,11 @@ _brew:
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
     eval "$(/opt/homebrew/bin/brew shellenv)"
-    brew bundle --file {{ justfile_directory() }}/Brewfile
+    brew bundle --no-upgrade --file {{ justfile_directory() }}/Brewfile
+
+_brew-update:
+    brew update
+    brew upgrade
 
 _shell:
     #!/usr/bin/env bash
@@ -197,6 +218,15 @@ _rust:
     #!/usr/bin/env bash
     if ! command -v rustc >/dev/null 2>&1; then
         curl -sSf https://sh.rustup.rs | sh -s -- -y
+    fi
+
+_toolchains-update:
+    #!/usr/bin/env bash
+    if command -v uv >/dev/null 2>&1; then
+        uv self update
+    fi
+    if command -v rustup >/dev/null 2>&1; then
+        rustup update
     fi
 
 _linux-deps:
@@ -259,7 +289,7 @@ _linux-deps:
 
 _agentic: _claude _amp _pi
 
-_claude: _submodules
+_claude: _submodules-init
     #!/usr/bin/env bash
     if ! command -v claude >/dev/null 2>&1; then
         curl -fsSL https://claude.ai/install.sh | bash
@@ -289,13 +319,13 @@ _ssh-config:
     fi
 
 [macos]
-_amp: _submodules
+_amp: _submodules-init
     #!/usr/bin/env bash
     mkdir -p ~/.agents
     ln -sfn {{ justfile_directory() }}/agents/skills ~/.agents/skills
 
 [linux]
-_amp: _submodules
+_amp: _submodules-init
     #!/usr/bin/env bash
     if ! command -v amp >/dev/null 2>&1; then
         curl -fsSL https://ampcode.com/install.sh | bash
@@ -303,7 +333,7 @@ _amp: _submodules
     mkdir -p ~/.agents
     ln -sfn {{ justfile_directory() }}/agents/skills ~/.agents/skills
 
-_pi: _submodules
+_pi: _submodules-init
     #!/usr/bin/env bash
     if ! command -v pi >/dev/null 2>&1; then
         curl -fsSL https://pi.dev/install.sh | sh

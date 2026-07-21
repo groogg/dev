@@ -14,6 +14,10 @@ curl -fsSL https://raw.githubusercontent.com/groogg/dev/main/install.sh | bash
 
 A `dev` CLI is available after install — it wraps the underlying `just` commands. Run `dev` at any time to see available commands.
 
+- `dev install` installs missing dependencies and applies the configuration without upgrading existing tools.
+- `dev update` upgrades Homebrew packages on macOS, updates installed toolchains, and updates skill submodules.
+- `dev sync` re-applies dotfile symlinks without downloading or upgrading anything.
+
 ## Git config
 
 Personal identity is kept out of the repo. On first run, `dev install` prompts for your name and email and writes them to `~/.gitconfig-local`, which is included by `dotfiles/git/.gitconfig` at runtime. Nothing personal is committed.
@@ -23,4 +27,3 @@ SSH keys are managed via [Secretive](https://github.com/maxgoedjen/secretive), w
 ## Agentic setup
 
 The install optionally sets up AI coding agents with a shared library of instructions and skills. See [`agents/skills/`](agents/skills/) for details.
-
