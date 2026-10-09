@@ -1,6 +1,6 @@
 export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
-stow_packages := if os() == "macos" { "zsh git ghostty vscode starship" } else { "zsh git starship" }
+stow_packages := if os() == "macos" { "zsh git ghostty vscode nvim starship" } else { "zsh git nvim starship" }
 
 # Show available recipes
 default:
@@ -149,6 +149,14 @@ _linux-deps:
         (cd /tmp && sha256sum -c gitleaks.sha256)
         sudo tar -xzf "/tmp/${asset}" -C /usr/local/bin gitleaks
         rm "/tmp/${asset}" /tmp/gitleaks_checksums.txt /tmp/gitleaks.sha256
+    fi
+
+    # Neovim plugins require >= 0.10; distro packages may be older.
+    if ! nvim --version 2>/dev/null | head -1 | grep -qE '0\.(1[0-9]|[2-9][0-9])|[1-9]+\.'; then
+        arch=$(uname -m | sed 's/aarch64/arm64/')
+        curl -fsSL -o /tmp/nvim.tar.gz "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${arch}.tar.gz"
+        sudo tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1
+        rm /tmp/nvim.tar.gz
     fi
 
     if ! command -v gh >/dev/null 2>&1; then
