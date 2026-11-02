@@ -136,7 +136,7 @@ _linux-deps:
     set -euo pipefail
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade \
-        git stow zsh make ripgrep curl unzip gcc jq zoxide
+        git stow zsh make ripgrep curl unzip xz-utils gcc jq zoxide
 
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
