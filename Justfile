@@ -193,21 +193,21 @@ _claude:
     fi
 
 
+# macOS keys live in Secretive; Linux keys go through ssh-agent
+ssh_agent_option := if os() == "macos" { 'IdentityAgent "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"' } else { "AddKeysToAgent yes" }
+
 _ssh-config:
     #!/usr/bin/env bash
+    set -euo pipefail
+    option='{{ ssh_agent_option }}'
     mkdir -p ~/.ssh
     touch ~/.ssh/config
     chmod 600 ~/.ssh/config
-    if [[ "{{ os() }}" == "macos" ]]; then
-        grep -q "IdentityAgent" ~/.ssh/config 2>/dev/null || \
-            printf '\nHost *\n\tIdentityAgent "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"\n' >> ~/.ssh/config
-    else
-        grep -q "AddKeysToAgent" ~/.ssh/config 2>/dev/null || \
-            printf '\nHost *\n\tAddKeysToAgent yes\n' >> ~/.ssh/config
-    fi
+    grep -q "${option%% *}" ~/.ssh/config || printf '\nHost *\n\t%s\n' "$option" >> ~/.ssh/config
 
 _macos:
     #!/usr/bin/env bash
+    set -euo pipefail
     plist="$HOME/Library/Preferences/com.apple.dock"
 
     # Clear existing apps and folders
