@@ -16,7 +16,7 @@ driven by `just` (wrapped by a `dev` CLI) and GNU `stow`.
 
 - **Justfile**: keep recipes small and single-purpose; internal recipes are prefixed with `_`
 - **OS-specific behavior**: use `[macos]` / `[linux]` recipe attributes when the recipe bodies differ, and `os()` when only a value differs — never branch on `uname`
-- **Shell scripts**: `#!/usr/bin/env bash` with `set -euo pipefail`; quote all expansions unless word splitting or globbing is the point
+- **Shell scripts**: `#!/usr/bin/env bash` with `set -euo pipefail`; quote all expansions; leave one unquoted only when it is a fixed value meant to split or glob, never user input or file contents
 - **Homebrew**: `brew`/`cask` entries grouped by purpose with section comments; core tools in `Brewfile`, personal apps in `Brewfile.personal`
 - **Dotfiles**: one `stow` package per tool under `dotfiles/<pkg>/`, mirroring the real home-directory layout
 - **Secrets**: never commit personal identity or credentials — git identity lives in `~/.gitconfig-local`, SSH keys in Secretive

@@ -104,8 +104,10 @@ _shell:
         sudo chsh -s "$(which zsh)" "$(whoami)"
     fi
 
+# --adopt pulls existing home files into the repo; list them so nothing private gets committed unseen
 _dot:
     cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
+    @git -C {{ justfile_directory() }} status --short -- dotfiles
 
 _hooks:
     git -C {{ justfile_directory() }} config core.hooksPath .githooks
@@ -136,34 +138,45 @@ _linux-deps:
     set -euo pipefail
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade \
-        git stow zsh make ripgrep curl unzip gcc
+        git stow zsh make ripgrep curl unzip gcc jq zoxide
+
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    case "$(uname -m)" in
+        x86_64) gnu=x86_64 deb=amd64 short=x64 ;;
+        aarch64) gnu=aarch64 deb=arm64 short=arm64 ;;
+    esac
+
+    # Download the latest release asset matching $2 from GitHub repo $1 to $tmp/asset,
+    # checked against the SHA-256 GitHub records for it
+    gh_release() {
+        local url digest
+        read -r url digest < <(curl -fsSL "https://api.github.com/repos/$1/releases/latest" \
+            | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | "\(.browser_download_url) \(.digest)"')
+        [[ "$digest" == sha256:* ]] || { echo "No SHA-256 for $1 release asset" >&2; return 1; }
+        curl -fsSL -o "$tmp/asset" "$url"
+        echo "${digest#sha256:}  $tmp/asset" | sha256sum -c --quiet
+    }
 
     if ! command -v fzf >/dev/null 2>&1; then
-        arch=$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
-        ver=$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)
-        curl -fsSL -o /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/latest/download/fzf-${ver}-linux_${arch}.tar.gz"
-        sudo tar -xzf /tmp/fzf.tar.gz -C /usr/local/bin
-        rm /tmp/fzf.tar.gz
+        gh_release junegunn/fzf "linux_${deb}\\.tar\\.gz$"
+        sudo tar -xzf "$tmp/asset" -C /usr/local/bin fzf
     fi
 
     if ! command -v gitleaks >/dev/null 2>&1; then
-        arch=$(uname -m | sed 's/x86_64/x64/' | sed 's/aarch64/arm64/')
-        ver=$(curl -fsSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)
-        asset="gitleaks_${ver}_linux_${arch}.tar.gz"
-        curl -fsSL -o "/tmp/${asset}" "https://github.com/gitleaks/gitleaks/releases/latest/download/${asset}"
-        curl -fsSL -o /tmp/gitleaks_checksums.txt "https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_${ver}_checksums.txt"
-        grep "  ${asset}$" /tmp/gitleaks_checksums.txt > /tmp/gitleaks.sha256
-        (cd /tmp && sha256sum -c gitleaks.sha256)
-        sudo tar -xzf "/tmp/${asset}" -C /usr/local/bin gitleaks
-        rm "/tmp/${asset}" /tmp/gitleaks_checksums.txt /tmp/gitleaks.sha256
+        gh_release gitleaks/gitleaks "linux_${short}\\.tar\\.gz$"
+        sudo tar -xzf "$tmp/asset" -C /usr/local/bin gitleaks
     fi
 
     # Neovim plugins require >= 0.10; distro packages may be older.
     if ! nvim --version 2>/dev/null | head -1 | grep -qE '0\.(1[0-9]|[2-9][0-9])|[1-9]+\.'; then
-        arch=$(uname -m | sed 's/aarch64/arm64/')
-        curl -fsSL -o /tmp/nvim.tar.gz "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${arch}.tar.gz"
-        sudo tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1
-        rm /tmp/nvim.tar.gz
+        gh_release neovim/neovim "^nvim-linux-${gnu/aarch64/arm64}\\.tar\\.gz$"
+        sudo tar -xzf "$tmp/asset" -C /usr/local --strip-components=1
+    fi
+
+    if ! command -v starship >/dev/null 2>&1; then
+        gh_release starship/starship "^starship-${gnu}-unknown-linux-musl\\.tar\\.gz$"
+        sudo tar -xzf "$tmp/asset" -C /usr/local/bin starship
     fi
 
     if ! command -v gh >/dev/null 2>&1; then
@@ -173,22 +186,12 @@ _linux-deps:
         sudo apt-get update && sudo apt-get install -y gh
     fi
 
-    if ! command -v zoxide >/dev/null 2>&1; then
-        curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
-    fi
-
-    if ! command -v starship >/dev/null 2>&1; then
-        curl -sS https://starship.rs/install.sh | sh -s -- -y
-    fi
-
     if ! command -v node >/dev/null 2>&1; then
-        arch=$(uname -m | sed 's/x86_64/x64/' | sed 's/aarch64/arm64/')
-        node_file=$(curl -fsSL https://nodejs.org/dist/latest/ | grep -oE "node-v[0-9.]+-linux-${arch}\.tar\.xz" | head -1)
-        curl -fsSL -o /tmp/node.tar.xz "https://nodejs.org/dist/latest/${node_file}"
-        sudo tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1
-        rm /tmp/node.tar.xz
+        read -r sum name < <(curl -fsSL https://nodejs.org/dist/latest/SHASUMS256.txt | grep -E "  node-v[0-9.]+-linux-${short}\\.tar\\.xz$")
+        curl -fsSL -o "$tmp/asset" "https://nodejs.org/dist/latest/${name}"
+        echo "${sum}  $tmp/asset" | sha256sum -c --quiet
+        sudo tar -xJf "$tmp/asset" -C /usr/local --strip-components=1
     fi
-
 
 _agentic: _claude
 
