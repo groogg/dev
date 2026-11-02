@@ -81,6 +81,7 @@ _brew: _brew-install _brew-bundle
 
 _brew-install:
     #!/usr/bin/env bash
+    set -euo pipefail
     if ! command -v brew >/dev/null 2>&1; then
         echo "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -91,8 +92,9 @@ _brew-bundle:
     brew bundle --no-upgrade --file {{ justfile_directory() }}/Brewfile
     rm -f ~/.local/bin/just
 
-_brew-update: _brew-bundle
+_brew-update:
     brew update
+    {{ just_executable() }} --justfile {{ justfile() }} _brew-bundle
     brew upgrade
 
 _shell:
@@ -140,9 +142,10 @@ _linux-deps:
 
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
-    case "$(uname -m)" in
+    case "{{ arch() }}" in
         x86_64) gnu=x86_64 deb=amd64 short=x64 ;;
         aarch64) gnu=aarch64 deb=arm64 short=arm64 ;;
+        *) echo "Unsupported CPU: {{ arch() }}" >&2; exit 1 ;;
     esac
 
     # Download the latest release asset matching $2 from GitHub repo $1 to $tmp/asset,
