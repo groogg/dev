@@ -77,16 +77,21 @@ _agentic-optional:
         echo "Skipping Claude Code."
     fi
 
-_brew:
+_brew: _brew-install _brew-bundle
+
+_brew-install:
     #!/usr/bin/env bash
     if ! command -v brew >/dev/null 2>&1; then
         echo "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-    brew bundle --no-upgrade --file {{ justfile_directory() }}/Brewfile
 
-_brew-update:
+# Homebrew's just replaces install.sh's bootstrap copy, which would shadow it on PATH
+_brew-bundle:
+    brew bundle --no-upgrade --file {{ justfile_directory() }}/Brewfile
+    rm -f ~/.local/bin/just
+
+_brew-update: _brew-bundle
     brew update
     brew upgrade
 

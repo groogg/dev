@@ -1,6 +1,7 @@
 brew 'git'
 brew 'gitleaks'
 brew 'stow'
+brew 'just'
 brew 'zsh'
 brew 'make'
 brew 'fzf'
