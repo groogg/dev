@@ -1,7 +1,5 @@
 export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
-stow_packages := if os() == "macos" { "zsh git ghostty vscode nvim starship" } else { "zsh git nvim starship" }
-
 # Show available recipes
 default:
     @just --list --unsorted
@@ -98,8 +96,14 @@ _shell:
         sudo chsh -s "$(which zsh)" "$(whoami)"
     fi
 
+# Every dotfiles/<pkg> is stowed; Linux skips the macOS-only apps
+[macos]
 _dot:
-    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
+    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} $(ls)
+
+[linux]
+_dot:
+    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} $(ls | grep -vxE 'ghostty|vscode')
 
 _hooks:
     git -C {{ justfile_directory() }} config core.hooksPath .githooks
@@ -225,6 +229,7 @@ _macos:
         "/Applications/Spotify.app"
     )
     for app in "${apps[@]}"; do
+        [[ -d "$app" ]] || continue
         defaults write "$plist" persistent-apps -array-add \
             "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"
     done
@@ -233,5 +238,6 @@ _macos:
 
     # Login items
     for app in Secretive Flux LookAway; do
+        [[ -d "/Applications/$app.app" ]] || continue
         osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"/Applications/$app.app\", hidden:false}" >/dev/null 2>&1 || true
     done
