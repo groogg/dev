@@ -133,6 +133,7 @@ _toolchains-update:
 
 _linux-deps:
     #!/usr/bin/env bash
+    set -euo pipefail
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade \
         git stow zsh make ripgrep curl unzip gcc

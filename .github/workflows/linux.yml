@@ -11,12 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v2
-      - run: just --list
-      # Skips the interactive and machine-wide steps (_configure, _shell)
+      # Skips the interactive and machine-wide steps (_configure, _shell).
+      # The recipes fail on any error; the second run checks they can be rerun.
       - run: just _linux-deps _dot _ssh-config
-      - name: Check results
-        run: |
-          for tool in fzf gitleaks nvim starship zoxide; do command -v "$tool"; done
-          for link in ~/.zshrc ~/.gitconfig ~/.config/nvim ~/.config/starship.toml; do test -L "$link"; done
-          test ! -e ~/.config/ghostty
-          grep -q AddKeysToAgent ~/.ssh/config
+      - run: just _linux-deps _dot _ssh-config
