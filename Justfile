@@ -148,12 +148,17 @@ _linux-deps:
         *) echo "Unsupported CPU: {{ arch() }}" >&2; exit 1 ;;
     esac
 
-    # Download the latest release asset matching $2 from GitHub repo $1 to $tmp/asset,
-    # checked against the SHA-256 GitHub records for it
+    # Supply-chain cooldown: only install releases published at least 7 days ago
+    min_age=$((7 * 86400))
+
+    # Download the newest cooled-down release asset matching $2 from GitHub repo $1
+    # to $tmp/asset, checked against the SHA-256 GitHub records for it
     gh_release() {
         local url digest
-        read -r url digest < <(curl -fsSL "https://api.github.com/repos/$1/releases/latest" \
-            | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | "\(.browser_download_url) \(.digest)"')
+        read -r url digest < <(curl -fsSL "https://api.github.com/repos/$1/releases" \
+            | jq -r --arg re "$2" --argjson age "$min_age" '
+                [.[] | select(.draft == false and .prerelease == false and now - (.published_at | fromdate) > $age)][0]
+                | .assets[] | select(.name | test($re)) | "\(.browser_download_url) \(.digest)"')
         [[ "$digest" == sha256:* ]] || { echo "No SHA-256 for $1 release asset" >&2; return 1; }
         curl -fsSL -o "$tmp/asset" "$url"
         echo "${digest#sha256:}  $tmp/asset" | sha256sum -c --quiet
@@ -188,8 +193,10 @@ _linux-deps:
     fi
 
     if ! command -v node >/dev/null 2>&1; then
-        read -r sum name < <(curl -fsSL https://nodejs.org/dist/latest/SHASUMS256.txt | grep -E "  node-v[0-9.]+-linux-${short}\\.tar\\.xz$")
-        curl -fsSL -o "$tmp/asset" "https://nodejs.org/dist/latest/${name}"
+        version=$(curl -fsSL https://nodejs.org/dist/index.json | jq -r --argjson age "$min_age" \
+            '[.[] | select((.version | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) and now - (.date + "T00:00:00Z" | fromdate) > $age)][0].version')
+        read -r sum name < <(curl -fsSL "https://nodejs.org/dist/${version}/SHASUMS256.txt" | grep -E "  node-v[0-9.]+-linux-${short}\\.tar\\.xz$")
+        curl -fsSL -o "$tmp/asset" "https://nodejs.org/dist/${version}/${name}"
         echo "${sum}  $tmp/asset" | sha256sum -c --quiet
         sudo tar -xJf "$tmp/asset" -C /usr/local --strip-components=1
     fi
