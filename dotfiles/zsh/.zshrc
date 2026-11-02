@@ -1,3 +1,6 @@
+# Homebrew's installer doesn't put itself on PATH
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+
 # --- Oh My Zsh ---
 
 export ZSH="$HOME/.oh-my-zsh"
