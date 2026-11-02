@@ -104,10 +104,8 @@ _shell:
         sudo chsh -s "$(which zsh)" "$(whoami)"
     fi
 
-# --adopt pulls existing home files into the repo; list them so nothing private gets committed unseen
 _dot:
     cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
-    @git -C {{ justfile_directory() }} status --short -- dotfiles
 
 _hooks:
     git -C {{ justfile_directory() }} config core.hooksPath .githooks
