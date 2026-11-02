@@ -1,5 +1,8 @@
 export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
+# Every dotfiles/<pkg>/; Linux skips the macOS-only apps
+stow_packages := if os() == "macos" { "*/" } else { "$(ls -d */ | grep -vxE 'ghostty/|vscode/')" }
+
 # Show available recipes
 default:
     @just --list --unsorted
@@ -96,14 +99,8 @@ _shell:
         sudo chsh -s "$(which zsh)" "$(whoami)"
     fi
 
-# Every dotfiles/<pkg> is stowed; Linux skips the macOS-only apps
-[macos]
 _dot:
-    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} $(ls)
-
-[linux]
-_dot:
-    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} $(ls | grep -vxE 'ghostty|vscode')
+    cd {{ justfile_directory() }}/dotfiles && stow --adopt -R -t {{ env_var('HOME') }} {{ stow_packages }}
 
 _hooks:
     git -C {{ justfile_directory() }} config core.hooksPath .githooks
