@@ -1,13 +1,7 @@
-# code
-cask 'podman-desktop' # instead of docker-desktop
-cask 'visual-studio-code'
+# Personal apps, picked during install (everything pre-selected; macOS only)
 
 # agentic
 cask 'claude' # Claude Desktop
-cask 'claude-code'
-
-# fonts
-cask 'font-jetbrains-mono-nerd-font'
 
 # everyday
 cask 'flux-app'

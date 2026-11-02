@@ -38,14 +38,21 @@ _configure:
         echo "Git user configured."
     fi
 
-_brew-personal:
+# Pick entries from a Brewfile with fzf and install them; all="true" pre-selects every entry.
+# Linux only offers `brew` lines not marked "macOS only". Skipped without a terminal (CI).
+_brew-pick file all="false":
     #!/usr/bin/env bash
-    printf "Install personal apps? [y/N] " && read -r answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        brew bundle --no-upgrade --file {{ justfile_directory() }}/Brewfile.personal
-    else
-        echo "Skipping personal apps."
-    fi
+    set -euo pipefail
+    [[ -t 0 ]] || { echo "No terminal, skipping {{ file }}."; exit 0; }
+    entries=$(awk -v linux={{ if os() == "linux" { "1" } else { "0" } }} \
+        '/^(brew|cask) / && !(linux && (/^cask / || /macOS only/))' "{{ justfile_directory() }}/{{ file }}")
+    [[ -n "$entries" ]] || exit 0
+    # Enter with nothing ticked skips, instead of fzf's default of installing the highlighted line
+    picked=$(fzf --multi {{ if all == "true" { "--bind load:select-all" } else { "" } }} \
+        --bind 'enter:transform:[[ $FZF_SELECT_COUNT -eq 0 ]] && echo abort || echo accept' \
+        --header "{{ file }}: Tab to toggle, Enter to install, Esc to skip" <<< "$entries" || true)
+    [[ -n "$picked" ]] || { echo "Nothing picked from {{ file }}."; exit 0; }
+    brew bundle --no-upgrade --file=- <<< "$picked"
 
 # Generate a new SSH key
 key:
@@ -60,9 +67,9 @@ key:
 
 # --- Internal ---
 
-_setup-mac: _configure _brew _brew-personal _dot _shell _uv _rust _ssh-config _hooks _agentic _macos
+_setup-mac: _configure _brew (_brew-pick "Brewfile.optional") (_brew-pick "Brewfile.personal" "true") _dot _shell _uv _rust _ssh-config _hooks _agentic _macos
 
-_setup-linux: _configure _linux-deps _brew _dot _shell _uv _rust _ssh-config _hooks _agentic-optional
+_setup-linux: _configure _linux-deps _brew (_brew-pick "Brewfile.optional") _dot _shell _uv _rust _ssh-config _hooks _agentic-optional
 
 _agentic-optional:
     #!/usr/bin/env bash

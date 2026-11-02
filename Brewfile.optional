@@ -1,0 +1,11 @@
+# Optional tools, picked during install (nothing pre-selected).
+# The picker reads plain `brew`/`cask` lines: Linux only offers `brew` lines without "macOS only".
+
+# cloud and infrastructure
+brew 'opentofu'
+brew 'awscli'
+brew 'azure-cli' # macOS only: no Linux build
+cask 'gcloud-cli'
+
+# containers
+cask 'podman-desktop' # instead of docker-desktop
