@@ -1,5 +1,7 @@
-# Homebrew's installer doesn't put itself on PATH
-[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew's installer doesn't put itself on PATH (macOS, then Linux)
+for brew in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+  [[ -x "$brew" ]] && eval "$("$brew" shellenv)" && break
+done
 
 # --- Oh My Zsh ---
 

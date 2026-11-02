@@ -1,8 +1,8 @@
+# Shared by macOS and Linux
 brew 'git'
 brew 'gitleaks'
 brew 'stow'
 brew 'just'
-brew 'zsh'
 brew 'make'
 brew 'fzf'
 brew 'node'
@@ -15,7 +15,12 @@ brew 'zoxide'
 brew 'starship'
 brew 'opentofu'
 brew 'awscli'
-brew 'azure-cli'
-cask 'ghostty'
-cask 'secretive'
-cask 'gcloud-cli'
+
+# macOS only: apps, azure-cli (no Linux build), and zsh (Linux uses apt's, which chsh accepts)
+if OS.mac?
+  brew 'zsh'
+  brew 'azure-cli'
+  cask 'ghostty'
+  cask 'secretive'
+  cask 'gcloud-cli'
+end

@@ -15,7 +15,7 @@ curl -fsSL https://raw.githubusercontent.com/groogg/dev/main/install.sh | bash
 A `dev` CLI is available after install — it wraps the underlying `just` commands. Run `dev` at any time to see available commands.
 
 - `dev install` installs missing dependencies and applies the configuration without upgrading existing tools.
-- `dev update` upgrades Homebrew packages on macOS and updates installed toolchains.
+- `dev update` upgrades Homebrew packages and updates installed toolchains, on macOS and Linux.
 - `dev sync` re-applies dotfile symlinks without downloading or upgrading anything.
 
 ## Git config

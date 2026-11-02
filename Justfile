@@ -1,4 +1,4 @@
-export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
+export PATH := env_var('HOME') + "/.local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:" + env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
 # Every dotfiles/<pkg>/; Linux skips the macOS-only apps
 stow_packages := if os() == "macos" { "*/" } else { "$(ls -d */ | grep -vxE 'ghostty/|vscode/')" }
@@ -15,11 +15,7 @@ install: _setup-mac
 install: _setup-linux
 
 # Upgrade installed tools
-[macos]
 update: _brew-update _toolchains-update
-
-[linux]
-update: _toolchains-update
 
 # Re-stow dotfiles
 sync: _dot
@@ -64,9 +60,9 @@ key:
 
 # --- Internal ---
 
-_setup-mac: _configure _brew _brew-personal _shell _dot _uv _rust _ssh-config _hooks _agentic _macos
+_setup-mac: _configure _brew _brew-personal _dot _shell _uv _rust _ssh-config _hooks _agentic _macos
 
-_setup-linux: _configure _linux-deps _shell _dot _uv _rust _ssh-config _hooks _agentic-optional
+_setup-linux: _configure _linux-deps _brew _dot _shell _uv _rust _ssh-config _hooks _agentic-optional
 
 _agentic-optional:
     #!/usr/bin/env bash
@@ -133,73 +129,10 @@ _toolchains-update:
         rustup update
     fi
 
+# Homebrew's build requirements, plus zsh for the login shell
 _linux-deps:
-    #!/usr/bin/env bash
-    set -euo pipefail
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
-    sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade \
-        git stow zsh make ripgrep curl unzip xz-utils gcc jq zoxide
-
-    tmp=$(mktemp -d)
-    trap 'rm -rf "$tmp"' EXIT
-    case "{{ arch() }}" in
-        x86_64) gnu=x86_64 deb=amd64 short=x64 ;;
-        aarch64) gnu=aarch64 deb=arm64 short=arm64 ;;
-        *) echo "Unsupported CPU: {{ arch() }}" >&2; exit 1 ;;
-    esac
-
-    # Supply-chain cooldown: only install releases published at least 7 days ago
-    min_age=$((7 * 86400))
-
-    # Download the newest cooled-down release asset matching $2 from GitHub repo $1
-    # to $tmp/asset, checked against the SHA-256 GitHub records for it
-    gh_release() {
-        local url digest
-        read -r url digest < <(curl -fsSL "https://api.github.com/repos/$1/releases" \
-            | jq -r --arg re "$2" --argjson age "$min_age" '
-                [.[] | select(.draft == false and .prerelease == false and now - (.published_at | fromdate) > $age)][0]
-                | .assets[] | select(.name | test($re)) | "\(.browser_download_url) \(.digest)"')
-        [[ "$digest" == sha256:* ]] || { echo "No SHA-256 for $1 release asset" >&2; return 1; }
-        curl -fsSL -o "$tmp/asset" "$url"
-        echo "${digest#sha256:}  $tmp/asset" | sha256sum -c --quiet
-    }
-
-    if ! command -v fzf >/dev/null 2>&1; then
-        gh_release junegunn/fzf "linux_${deb}\\.tar\\.gz$"
-        sudo tar -xzf "$tmp/asset" -C /usr/local/bin fzf
-    fi
-
-    if ! command -v gitleaks >/dev/null 2>&1; then
-        gh_release gitleaks/gitleaks "linux_${short}\\.tar\\.gz$"
-        sudo tar -xzf "$tmp/asset" -C /usr/local/bin gitleaks
-    fi
-
-    # Neovim plugins require >= 0.10; distro packages may be older.
-    if ! nvim --version 2>/dev/null | head -1 | grep -qE '0\.(1[0-9]|[2-9][0-9])|[1-9]+\.'; then
-        gh_release neovim/neovim "^nvim-linux-${gnu/aarch64/arm64}\\.tar\\.gz$"
-        sudo tar -xzf "$tmp/asset" -C /usr/local --strip-components=1
-    fi
-
-    if ! command -v starship >/dev/null 2>&1; then
-        gh_release starship/starship "^starship-${gnu}-unknown-linux-musl\\.tar\\.gz$"
-        sudo tar -xzf "$tmp/asset" -C /usr/local/bin starship
-    fi
-
-    if ! command -v gh >/dev/null 2>&1; then
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-            | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-        sudo apt-get update && sudo apt-get install -y gh
-    fi
-
-    if ! command -v node >/dev/null 2>&1; then
-        version=$(curl -fsSL https://nodejs.org/dist/index.json | jq -r --argjson age "$min_age" \
-            '[.[] | select((.version | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) and now - (.date + "T00:00:00Z" | fromdate) > $age)][0].version')
-        read -r sum name < <(curl -fsSL "https://nodejs.org/dist/${version}/SHASUMS256.txt" | grep -E "  node-v[0-9.]+-linux-${short}\\.tar\\.xz$")
-        curl -fsSL -o "$tmp/asset" "https://nodejs.org/dist/${version}/${name}"
-        echo "${sum}  $tmp/asset" | sha256sum -c --quiet
-        sudo tar -xJf "$tmp/asset" -C /usr/local --strip-components=1
-    fi
+    sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade build-essential procps curl file git zsh
 
 _agentic: _claude
 
