@@ -20,7 +20,7 @@ On any Linux VM that can reach GitHub:
 git clone https://github.com/groogg/dev ~/.dev && ~/.dev/remote.sh
 ```
 
-Installs starship, fzf, zoxide, ripgrep, fd, gh, Neovim and Claude Code into `~/.local/bin` (checksummed, releases at least 7 days old), links your shell, git, starship and Neovim config, and hooks your aliases into bash or zsh. No sudo, login shell untouched.
+No sudo: everything stays in your home folder, and the login shell is untouched.
 
 `~/.dev/remote.sh --update` refreshes it; `~/.dev/remote.sh --clean` removes everything, sign-ins included.
 
