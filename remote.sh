@@ -5,7 +5,7 @@
 #   ~/.dev/remote.sh --update   pull the repo and refresh every tool
 #   ~/.dev/remote.sh --clean    remove everything this script added, sign-ins and ~/.dev included
 set -euo pipefail
-umask 022 # nothing this script creates is writable by the VM's other users
+umask 077 # everything this script and its installers create stays private to you
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 bin="$HOME/.local/bin"
@@ -149,7 +149,7 @@ hook_shells() {
         [[ "$rc" == */.bashrc || -f "$rc" ]] || continue
         [[ -e "$rc" ]] || record "$rc"
         grep -qF "$marker" "$rc" 2>/dev/null && continue
-        # Start on a fresh line without adding a blank one, so --clean leaves the file byte-for-byte as it was
+        # Start on a fresh line without adding a blank one; --clean removes only the line itself
         [[ -s "$rc" && -n "$(tail -c 1 "$rc")" ]] && echo >>"$rc"
         printf '[ -f "$HOME/.config/shell/rc.sh" ] && . "$HOME/.config/shell/rc.sh" %s\n' "$marker" >>"$rc"
     done
@@ -166,11 +166,11 @@ setup() {
     done
     # A token lifts GitHub's anonymous limit: GITHUB_TOKEN, GH_TOKEN, or gh's own sign-in
     token=${GITHUB_TOKEN:-${GH_TOKEN:-$("$bin/gh" auth token 2>/dev/null || true)}}
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d "$state/tmp.XXXXXX")
     trap 'rm -rf "$tmp"' EXIT
 
     # Ask for a git identity only when the VM has none, so the client's stays in charge
-    if [[ -t 0 ]] && ! git config --global user.email >/dev/null 2>&1; then
+    if [[ -t 0 ]] && ! git config --includes --global user.email >/dev/null 2>&1; then
         [[ -e "$HOME/.gitconfig-local" ]] || record "$HOME/.gitconfig-local"
         "$repo/scripts/git-identity.sh"
     fi
