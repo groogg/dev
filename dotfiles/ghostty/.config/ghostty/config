@@ -3,3 +3,5 @@ font-size=16
 # background-opacity=0.75
 # background-blur = true
 shell-integration = zsh
+# Report the common xterm-256color so every server knows how to draw, however you connect
+term = xterm-256color

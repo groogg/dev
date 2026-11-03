@@ -17,28 +17,12 @@ brew_install() {
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 }
 
-brew_essentials() {
+brew_bundle() {
     brew bundle --no-upgrade --file "$repo/Brewfile"
 }
 
-# Pick entries from Brewfile $1 with fzf and install them; "all" as $2 pre-selects every entry.
-# Skipped without a terminal.
-brew_pick() {
-    local entries picked bind=""
-    [[ -t 0 ]] || { echo "No terminal, skipping $1."; return 0; }
-    entries=$(grep -E '^(brew|cask) ' "$repo/$1" || true)
-    [[ -n "$entries" ]] || return 0
-    [[ "${2:-}" == all ]] && bind="load:select-all"
-    # Enter with nothing ticked skips, instead of fzf's default of installing the highlighted line
-    picked=$(fzf --multi ${bind:+--bind "$bind"} \
-        --bind 'enter:transform:[[ $FZF_SELECT_COUNT -eq 0 ]] && echo abort || echo accept' \
-        --header "$1: Tab to toggle, Enter to install, Esc to skip" <<<"$entries" || true)
-    [[ -n "$picked" ]] || { echo "Nothing picked from $1."; return 0; }
-    brew bundle --no-upgrade --file=- <<<"$picked"
-}
-
 link_dotfiles() {
-    (cd "$repo/dotfiles" && stow --adopt -R -t "$HOME" */)
+    (cd "$repo/dotfiles" && stow -R -t "$HOME" */)
 }
 
 toolchains() {
@@ -101,9 +85,7 @@ case "${1:-}" in
     install)
         "$repo/scripts/git-identity.sh"
         brew_install
-        brew_essentials
-        brew_pick Brewfile.optional
-        brew_pick Brewfile.personal all
+        brew_bundle
         link_dotfiles
         toolchains
         ssh_config
@@ -112,7 +94,7 @@ case "${1:-}" in
         ;;
     update)
         brew update
-        brew_essentials
+        brew_bundle
         brew upgrade
         toolchains_update
         ;;

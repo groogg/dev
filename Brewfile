@@ -1,11 +1,9 @@
-# Essentials, always installed: the setup and dotfiles depend on these (macOS only;
-# remote VMs get their tools from remote.sh)
+# Everything this Mac gets. Remote VMs get their tools from remote.sh.
 
 # shell and setup
 brew 'git'
 brew 'gitleaks' # pre-commit hook
 brew 'stow'
-brew 'make'
 brew 'fzf'
 brew 'starship'
 brew 'zoxide'
@@ -17,10 +15,27 @@ brew 'ripgrep'
 brew 'fd'
 brew 'node'
 brew 'gh'
-
-# apps
 cask 'ghostty'
-cask 'secretive' # ~/.ssh/config points at its agent
 cask 'font-jetbrains-mono-nerd-font' # starship's icons
 cask 'visual-studio-code'
+cask 'podman-desktop' # instead of docker-desktop
+
+# cloud and infrastructure
+brew 'opentofu'
+brew 'awscli'
+brew 'azure-cli'
+cask 'gcloud-cli'
+
+# agentic
 cask 'claude-code'
+cask 'claude' # Claude Desktop
+
+# everyday
+cask 'secretive' # ~/.ssh/config points at its agent
+cask 'flux-app'
+cask 'slack'
+cask 'spotify'
+cask 'brave-browser'
+cask 'lookaway'
+cask 'bitwarden'
+cask 'rectangle'

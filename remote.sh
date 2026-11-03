@@ -30,9 +30,6 @@ tool_data=(
     .local/bin/claude .local/share/claude .local/state/claude .cache/claude .claude .claude.json
 )
 
-# Folders setup may create; --clean removes them again only if they're empty
-created_dirs=(.local/bin .local/share .local/state .local .cache .config/git .config/shell .config .terminfo/x .terminfo/g .terminfo)
-
 die() { echo "remote.sh: $*" >&2; exit 1; }
 
 record() { grep -qxF "$1" "$manifest" 2>/dev/null || echo "$1" >>"$manifest"; }
@@ -145,26 +142,12 @@ hook_shells() {
     done
 }
 
-# Lets Neovim, less and friends work when you connect from Ghostty, however you connect
-install_terminfo() {
-    command -v tic >/dev/null 2>&1 || return 0
-    infocmp xterm-ghostty >/dev/null 2>&1 && return 0
-    tic -x -o "$HOME/.terminfo" "$repo/terminfo/xterm-ghostty.src" 2>/dev/null || return 0
-    record "$HOME/.terminfo/x/xterm-ghostty"
-    record "$HOME/.terminfo/g/ghostty"
-}
-
 setup() {
     for cmd in curl tar python3 sha256sum; do
         command -v "$cmd" >/dev/null 2>&1 || die "needs $cmd, which this VM doesn't have"
     done
-    local path new_dirs=()
-    for path in "${created_dirs[@]}"; do
-        [[ -e "$HOME/$path" ]] || new_dirs+=("$HOME/$path")
-    done
+    local path
     mkdir -p "$bin" "$state"
-    # Only the first run knows which folders were missing
-    [[ -f "$state/dirs" ]] || printf '%s\n' "${new_dirs[@]}" >"$state/dirs"
     for path in "${tool_data[@]}"; do
         [[ -e "$HOME/$path" ]] || record "$HOME/$path"
     done
@@ -184,12 +167,11 @@ setup() {
     link_dotfiles
     include_gitconfig
     hook_shells
-    install_terminfo
     echo "Done. Open a new shell, or run: source ~/.config/shell/rc.sh"
 }
 
 clean() {
-    local pair dst rc dirs=""
+    local pair dst rc
     git config --global --fixed-value --unset-all include.path "$repo/dotfiles/git/.gitconfig" 2>/dev/null || true
     [[ -f "$manifest" ]] && xargs -d '\n' rm -rf <"$manifest"
     for pair in "${links[@]}"; do
@@ -200,11 +182,8 @@ clean() {
     for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
         [[ -f "$rc" ]] && sed -i "/$marker\$/d" "$rc"
     done
-    [[ -f "$state/dirs" ]] && dirs=$(sort -r "$state/dirs")
     rm -rf "$state"
     [[ "$repo" == "$HOME/.dev" ]] && rm -rf "$repo"
-    # Then the folders setup created, children first, if nothing else has moved in
-    [[ -n "$dirs" ]] && xargs -d '\n' rmdir <<<"$dirs" 2>/dev/null || true
     echo "Removed. Open a new shell to drop the aliases from this session."
 }
 
