@@ -39,7 +39,7 @@ _configure:
     fi
 
 # Pick entries from a Brewfile with fzf and install them; all="true" pre-selects every entry.
-# Linux only offers `brew` lines not marked "macOS only". Skipped without a terminal (CI).
+# Linux only offers `brew` lines not marked "macOS only". Skipped without a terminal.
 _brew-pick file all="false":
     #!/usr/bin/env bash
     set -euo pipefail
