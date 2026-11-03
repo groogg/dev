@@ -127,6 +127,8 @@ link_dotfiles() {
         [[ "$(readlink "$dst" 2>/dev/null)" == "$src" ]] && continue
         mkdir -p "$(dirname "$dst")"
         if [[ -e "$dst" || -L "$dst" ]]; then
+            [[ -e "$dst.dev-backup" || -L "$dst.dev-backup" ]] &&
+                die "$dst.dev-backup already exists; move it aside so this backup doesn't replace it, then re-run"
             mv "$dst" "$dst.dev-backup"
             echo "Moved your existing $dst to $dst.dev-backup"
         fi
@@ -183,15 +185,25 @@ setup() {
 
 clean() {
     local pair dst rc
+    # Other tools may have written to ~/.gitconfig and the rc files since setup, so take out only
+    # our lines, then delete the file only if this script created it and nothing else is left
     git config --global --unset-all include.path "$repo/dotfiles/git/.gitconfig" 2>/dev/null || true
-    [[ -f "$manifest" ]] && xargs -d '\n' rm -rf <"$manifest"
+    owned "$HOME/.gitconfig" && [[ -z "$(git config -f "$HOME/.gitconfig" --list 2>/dev/null)" ]] && rm -f "$HOME/.gitconfig"
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        [[ -f "$rc" ]] && sed -i "/$marker\$/d" "$rc"
+        owned "$rc" && [[ ! -s "$rc" ]] && rm -f "$rc"
+    done
+    [[ -f "$manifest" ]] && grep -vxF -e "$HOME/.gitconfig" -e "$HOME/.bashrc" -e "$HOME/.zshrc" "$manifest" |
+        xargs -r -d '\n' rm -rf
     for pair in "${links[@]}"; do
         dst="$HOME/${pair#*:}"
         [[ "$(readlink "$dst" 2>/dev/null)" == "$repo/${pair%%:*}" ]] && rm "$dst"
-        [[ -e "$dst.dev-backup" || -L "$dst.dev-backup" ]] && mv "$dst.dev-backup" "$dst"
-    done
-    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        [[ -f "$rc" ]] && sed -i "/$marker\$/d" "$rc"
+        [[ -e "$dst.dev-backup" || -L "$dst.dev-backup" ]] || continue
+        if [[ -e "$dst" || -L "$dst" ]]; then
+            echo "Kept your newer $dst; the one from before setup is still in $dst.dev-backup"
+        else
+            mv "$dst.dev-backup" "$dst"
+        fi
     done
     rm -rf "$state"
     [[ "$repo" == "$HOME/.dev" ]] && rm -rf "$repo"
@@ -200,11 +212,13 @@ clean() {
 
 # Show what changed upstream and ask before running it: whoever can push to the repo runs code here
 update() {
-    local incoming answer
+    local answer
     git -C "$repo" fetch --quiet
-    incoming=$(git -C "$repo" log --oneline HEAD..@{u})
-    if [[ -n "$incoming" ]]; then
-        echo "$incoming"
+    git -C "$repo" rev-parse --verify --quiet '@{u}' >/dev/null ||
+        die "$repo has no upstream branch to update from; check it out on main"
+    if [[ -n "$(git -C "$repo" rev-list HEAD..@{u})" ]]; then
+        # The full changes, not just their subjects: a harmless-looking message can hide anything
+        git -C "$repo" log --stat -p HEAD..@{u}
         [[ -t 0 ]] || die "--update asks before applying new commits; run it from a terminal"
         read -r -p "Apply these commits? [y/N] " answer
         [[ "$answer" == [yY] ]] || die "not updated"
