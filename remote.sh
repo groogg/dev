@@ -5,6 +5,7 @@
 #   ~/.dev/remote.sh --update   pull the repo and refresh every tool
 #   ~/.dev/remote.sh --clean    remove everything this script added, sign-ins and ~/.dev included
 set -euo pipefail
+umask 022 # nothing this script creates is writable by the VM's other users
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 bin="$HOME/.local/bin"
@@ -32,13 +33,23 @@ tool_data=(
 
 die() { echo "remote.sh: $*" >&2; exit 1; }
 
-record() { grep -qxF "$1" "$manifest" 2>/dev/null || echo "$1" >>"$manifest"; }
+record() { owned "$1" || echo "$1" >>"$manifest"; }
+owned() { grep -qxF "$1" "$manifest" 2>/dev/null; }
+
+# GET a GitHub API URL. The token, if any, goes in on a file descriptor so other users can't see it in ps.
+github_api() {
+    if [[ -n "$token" ]]; then
+        curl -fsS --retry 3 -H @<(printf 'Authorization: Bearer %s\n' "$token") "$1"
+    else
+        curl -fsS --retry 3 "$1"
+    fi
+}
 
 # Print "url sha256" for the newest stable release asset of GitHub repo $1 matching regex $2,
 # skipping releases younger than the cooldown
 release_asset() {
     local releases
-    releases=$(curl -fsS --retry 3 "${github_auth[@]}" "https://api.github.com/repos/$1/releases?per_page=10") ||
+    releases=$(github_api "https://api.github.com/repos/$1/releases?per_page=10") ||
         die "couldn't look up $1's releases (curl's error is above). A 403 means GitHub's limit of 60 lookups an hour per network without a token: wait, or set GITHUB_TOKEN."
     python3 -c '
 import calendar, json, re, sys, time
@@ -67,7 +78,8 @@ fetch() {
 
 # Install binary $1 from GitHub repo $2's release asset matching $3
 install_tool() {
-    [[ -x "$bin/$1" && -z "$refresh" ]] && return 0
+    # Leave a binary alone if it's already there, unless it's ours and --update asked for a refresh
+    [[ -x "$bin/$1" ]] && { [[ -z "$refresh" ]] || ! owned "$bin/$1"; } && return 0
     echo "Installing $1..."
     fetch "$2" "$3"
     rm -rf "$tmp/unpacked" && mkdir "$tmp/unpacked"
@@ -92,7 +104,7 @@ install_tools() {
     install_tool gh cli/cli "^gh_.*_linux_$deb\.tar\.gz$"
 
     # Neovim needs its runtime files next to the binary, so it keeps its own folder
-    if [[ ! -x "$bin/nvim" || -n "$refresh" ]]; then
+    if [[ ! -x "$bin/nvim" ]] || { [[ -n "$refresh" ]] && owned "$bin/nvim"; }; then
         echo "Installing nvim..."
         fetch neovim/neovim "^nvim-linux-${gnu/aarch64/arm64}\.tar\.gz$"
         rm -rf "$state/nvim" && mkdir -p "$state/nvim"
@@ -135,6 +147,7 @@ hook_shells() {
     local rc
     for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
         [[ "$rc" == */.bashrc || -f "$rc" ]] || continue
+        [[ -e "$rc" ]] || record "$rc"
         grep -qF "$marker" "$rc" 2>/dev/null && continue
         # Start on a fresh line without adding a blank one, so --clean leaves the file byte-for-byte as it was
         [[ -s "$rc" && -n "$(tail -c 1 "$rc")" ]] && echo >>"$rc"
@@ -152,16 +165,14 @@ setup() {
         [[ -e "$HOME/$path" ]] || record "$HOME/$path"
     done
     # A token lifts GitHub's anonymous limit: GITHUB_TOKEN, GH_TOKEN, or gh's own sign-in
-    local token=${GITHUB_TOKEN:-${GH_TOKEN:-$("$bin/gh" auth token 2>/dev/null || true)}}
-    github_auth=()
-    [[ -n "$token" ]] && github_auth=(-H "Authorization: Bearer $token")
+    token=${GITHUB_TOKEN:-${GH_TOKEN:-$("$bin/gh" auth token 2>/dev/null || true)}}
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
 
     # Ask for a git identity only when the VM has none, so the client's stays in charge
     if [[ -t 0 ]] && ! git config --global user.email >/dev/null 2>&1; then
+        [[ -e "$HOME/.gitconfig-local" ]] || record "$HOME/.gitconfig-local"
         "$repo/scripts/git-identity.sh"
-        record "$HOME/.gitconfig-local"
     fi
     install_tools
     link_dotfiles
@@ -172,7 +183,7 @@ setup() {
 
 clean() {
     local pair dst rc
-    git config --global --fixed-value --unset-all include.path "$repo/dotfiles/git/.gitconfig" 2>/dev/null || true
+    git config --global --unset-all include.path "$repo/dotfiles/git/.gitconfig" 2>/dev/null || true
     [[ -f "$manifest" ]] && xargs -d '\n' rm -rf <"$manifest"
     for pair in "${links[@]}"; do
         dst="$HOME/${pair#*:}"
@@ -187,11 +198,26 @@ clean() {
     echo "Removed. Open a new shell to drop the aliases from this session."
 }
 
+# Show what changed upstream and ask before running it: whoever can push to the repo runs code here
+update() {
+    local incoming answer
+    git -C "$repo" fetch --quiet
+    incoming=$(git -C "$repo" log --oneline HEAD..@{u})
+    if [[ -n "$incoming" ]]; then
+        echo "$incoming"
+        [[ -t 0 ]] || die "--update asks before applying new commits; run it from a terminal"
+        read -r -p "Apply these commits? [y/N] " answer
+        [[ "$answer" == [yY] ]] || die "not updated"
+        git -C "$repo" merge --ff-only --quiet @{u}
+    fi
+    exec "$repo/remote.sh" --refresh
+}
+
 [[ "$(uname -s)" == Linux ]] || die "this script is for remote Linux VMs; on the Mac use dev install"
-refresh=""
+refresh="" token=""
 case "${1:-}" in
     "") setup ;;
-    --update) git -C "$repo" pull --ff-only && exec "$repo/remote.sh" --refresh ;;
+    --update) update ;;
     --refresh) refresh=1 && setup ;; # internal: re-run by --update after pulling
     --clean) clean ;;
     *) die "usage: remote.sh [--update | --clean]" ;;
