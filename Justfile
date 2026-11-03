@@ -67,18 +67,9 @@ key:
 
 # --- Internal ---
 
-_setup-mac: _configure _brew (_brew-pick "Brewfile.optional") (_brew-pick "Brewfile.personal" "true") _dot _shell _uv _rust _ssh-config _hooks _agentic _macos
+_setup-mac: _configure _brew (_brew-pick "Brewfile.optional") (_brew-pick "Brewfile.personal" "true") _dot _shell _uv _rust _ssh-config _hooks _macos
 
-_setup-linux: _configure _linux-deps _brew (_brew-pick "Brewfile.optional") _dot _shell _uv _rust _ssh-config _hooks _agentic-optional
-
-_agentic-optional:
-    #!/usr/bin/env bash
-    printf "Install Claude Code? [y/N] " && read -r answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        just --justfile {{ justfile() }} _agentic
-    else
-        echo "Skipping Claude Code."
-    fi
+_setup-linux: _configure _linux-deps _brew (_brew-pick "Brewfile.optional") _dot _shell _uv _rust _ssh-config _hooks _claude
 
 _brew: _brew-install _brew-bundle
 
@@ -141,10 +132,10 @@ _linux-deps:
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get update
     sudo NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade build-essential procps curl file git zsh
 
-_agentic: _claude
-
+# macOS gets Claude Code from the Brewfile cask; Linux uses Anthropic's installer
 _claude:
     #!/usr/bin/env bash
+    set -euo pipefail
     if ! command -v claude >/dev/null 2>&1; then
         curl -fsSL https://claude.ai/install.sh | bash
     fi
