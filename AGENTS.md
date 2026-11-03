@@ -1,36 +1,37 @@
 # Agent Instructions for dotfiles repository
 
-This repo manages dotfiles, Homebrew packages, and AI coding-agent setup. It is
-driven by `just` (wrapped by a `dev` CLI) and GNU `stow`.
+This repo sets up a Mac for development, and brings a light, removable version of the same shell to
+remote Linux VMs. Two scripts do everything: `mac.sh` (macOS, Homebrew + GNU `stow`) and `remote.sh`
+(Linux VMs, user-space only).
 
-## Build/Install Commands
+## Commands
 
-- `just install` (or `dev install`) — full setup for the current OS (`_setup-mac` / `_setup-linux`)
-- `just update` (or `dev update`) — upgrade Homebrew packages and installed toolchains
-- `just sync` — re-stow dotfiles
-- `just key` — generate a new SSH key (for Linux/non-Secretive setups; on macOS keys are managed by Secretive)
-- `brew bundle --file Brewfile` — install the essentials (macOS and Linux)
-- `just _brew-pick Brewfile.optional` / `just _brew-pick Brewfile.personal true` — fzf picker for optional tools (none pre-selected) and personal apps (all pre-selected)
+- `./mac.sh install` (or `dev install`) — full Mac setup: Homebrew essentials, the optional/personal pickers, dotfiles, toolchains, SSH, Dock
+- `./mac.sh update` (or `dev update`) — upgrade Homebrew packages and toolchains
+- `./mac.sh sync` (or `dev sync`) — re-stow dotfiles
+- `git clone https://github.com/groogg/dev ~/.dev && ~/.dev/remote.sh` — set up a remote VM; `--update` refreshes, `--clean` removes everything
 
 ## Code Style Guidelines
 
-- **Justfile**: keep recipes small and single-purpose; internal recipes are prefixed with `_`
-- **OS-specific behavior**: use `[macos]` / `[linux]` recipe attributes when the recipe bodies differ, and `os()` when only a value differs — never branch on `uname`
-- **Shell scripts**: `#!/usr/bin/env bash` with `set -euo pipefail`; quote all expansions; leave one unquoted only when it is a fixed value meant to split or glob, never user input or file contents
-- **Homebrew**: `brew`/`cask` entries grouped by purpose with section comments; essentials the setup depends on in `Brewfile` (shared by macOS and Linux; macOS-only entries inside `if OS.mac?`), picked extras in `Brewfile.optional`, personal apps in `Brewfile.personal`. The picker reads plain `brew`/`cask` lines, so the two picked files stay flat; mark a formula with no Linux build `# macOS only`
-- **Dotfiles**: one `stow` package per tool under `dotfiles/<pkg>/`, mirroring the real home-directory layout
+- **Scripts**: `#!/usr/bin/env bash` with `set -euo pipefail`; one function per step; quote all expansions, leaving one unquoted only when it is a fixed value meant to split or glob, never user input or file contents
+- **One OS per script**: `mac.sh` is macOS-only and `remote.sh` is Linux-only; don't add OS branches to either. Anything both need goes in `dotfiles/shell/.config/shell/rc.sh` (shell setup) or `scripts/` (helpers)
+- **remote.sh stays non-invasive**: no sudo, nothing outside `$HOME`, everything it adds recorded so `--clean` removes it; existing files are moved to `*.dev-backup` and restored on clean; downloads are checked against GitHub's SHA-256 and skip releases younger than 7 days
+- **Homebrew**: `brew`/`cask` entries grouped by purpose with section comments; essentials the setup depends on in `Brewfile`, picked extras in `Brewfile.optional`, personal apps in `Brewfile.personal`. The picker reads plain `brew`/`cask` lines, so keep the files flat
+- **Dotfiles**: one `stow` package per tool under `dotfiles/<pkg>/`, mirroring the real home-directory layout; shell config that VMs also need belongs in `rc.sh`, which must work in both bash and zsh
 - **Secrets**: never commit personal identity or credentials — git identity lives in `~/.gitconfig-local`, SSH keys in Secretive
 
 ## File Organization
 
-- `Justfile` — all setup/maintenance recipes; `_setup-mac` / `_setup-linux` are the OS entry points
+- `mac.sh` / `remote.sh` — the two entry points
+- `install.sh` — Mac bootstrap (clones the repo, runs `mac.sh install`)
 - `Brewfile` / `Brewfile.optional` / `Brewfile.personal` — essentials, optional tools, personal apps
-- `dotfiles/<pkg>/` — stow packages (zsh, git, ghostty, vscode, starship)
-- `install.sh` — bootstrap entry point (clones repo, installs `just`, runs `just install`)
+- `dotfiles/<pkg>/` — stow packages (zsh, shell, git, ghostty, vscode, starship, nvim)
+- `scripts/git-identity.sh` — git name/email prompt shared by both scripts
+- `terminfo/xterm-ghostty.src` — Ghostty's terminal description, installed on VMs by `remote.sh`
 
 ## Testing
 
-- `just --list` and `just --show <recipe>` — verify the Justfile parses and a recipe resolves the expected OS variant
-- Re-run `just install` / `just sync` — recipes are idempotent; symlinks should resolve correctly (`ls -la` the targets)
-- After editing dotfiles, source to test: `source ~/.zshrc`
-- Verify OS-specific recipes on both macOS and Linux where possible
+- `bash -n mac.sh remote.sh` — syntax check
+- Re-run `./mac.sh install` / `./mac.sh sync` — idempotent; symlinks should resolve correctly (`ls -la` the targets)
+- After editing dotfiles, open a new shell or `source ~/.zshrc`
+- Test `remote.sh` in a fresh Ubuntu container as a non-root user without sudo: install, re-run, `--clean`, and check the home folder is left as it was

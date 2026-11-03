@@ -1,62 +1,34 @@
-# Homebrew's installer doesn't put itself on PATH (macOS, then Linux)
-for brew in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
-  [[ -x "$brew" ]] && eval "$("$brew" shellenv)" && break
-done
-
-# --- Oh My Zsh ---
-
-export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME=""
-plugins=(git)
-source $ZSH/oh-my-zsh.sh
+# Homebrew's installer doesn't put itself on PATH
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 
 [[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
 
 # Local secrets (API keys, etc) — not in dotfiles repo
 [[ -f ~/.secrets ]] && source ~/.secrets
 
-# --- Tools ---
+# --- zsh ---
 
-source <(fzf --zsh)
-eval "$(starship init zsh)"
-eval "$(zoxide init zsh)"
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+setopt share_history hist_ignore_all_dups auto_cd
 
-# --- Aliases ---
+autoload -Uz compinit && compinit
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
-alias python='python3'
+# Up/Down search history for what's already typed
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search
+bindkey '^[[B' down-line-or-beginning-search
 
-# git
-alias s='git status'
-alias gaa='git add -A'
-alias gc='git commit'
-alias com='git checkout main'
-alias gd='git diff'
-alias gdc='git diff --cached'
-alias co='git checkout'
-alias up='git push'
-alias upf='git push --force-with-lease'
-alias pu='git pull'
-alias pur='git pull --rebase'
-alias fe='git fetch'
-alias re='git rebase'
+alias ls='ls -G'
 
-# --- Functions ---
-
-mkdircd() {
-  mkdir -p "$1" && cd "$1"
-}
-
-# [f]uzzy check[o]ut
-fo() {
-  git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git checkout' | xargs git checkout
-}
-
-# [p]ull request check[o]ut
-po() {
-  gh pr list --author "@me" | fzf --header 'checkout PR' | awk '{print $(NF-5)}' | xargs git checkout
-}
+# Aliases, functions and tools shared with remote VMs
+source ~/.config/shell/rc.sh
 
 dev() {
-  just --justfile ~/dev/Justfile "$@"
-  [[ "$1" == "sync" ]] && source ~/.zshrc
+  ~/dev/mac.sh "$@" || return
+  if [[ "$1" == "sync" ]]; then source ~/.zshrc; fi
 }

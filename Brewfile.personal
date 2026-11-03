@@ -1,4 +1,4 @@
-# Personal apps, picked during install (everything pre-selected; macOS only)
+# Personal apps, picked during install (everything pre-selected)
 
 # agentic
 cask 'claude' # Claude Desktop
