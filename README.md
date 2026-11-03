@@ -10,7 +10,7 @@
 curl -fsSL https://raw.githubusercontent.com/groogg/dev/main/install.sh | bash
 ```
 
-Then `dev install | update | sync` (it runs `~/dev/mac.sh`): install everything in the `Brewfile` and link the dotfiles, upgrade it all, or just re-link.
+Then `dev install | update | sync` (`dev` links to `~/dev/mac.sh`): install everything in the `Brewfile` and link the dotfiles, upgrade it all, or just re-link.
 
 ## Remote VMs
 

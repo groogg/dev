@@ -27,8 +27,3 @@ alias ls='ls -G'
 
 # Aliases, functions and tools shared with remote VMs
 source ~/.config/shell/rc.sh
-
-dev() {
-  ~/dev/mac.sh "$@" || return
-  if [[ "$1" == "sync" ]]; then source ~/.zshrc; fi
-}

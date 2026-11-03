@@ -5,7 +5,7 @@ remote Linux VMs (user-space only, removable). Keep it that small.
 
 ## Commands
 
-- `./mac.sh install | update | sync` (or `dev ...`) — set up, upgrade, or re-link the Mac
+- `dev install | update | sync` — set up, upgrade, or re-link the Mac (`dev` links to `mac.sh`; `./mac.sh` before the first install)
 - `~/.dev/remote.sh [--update | --clean]` — set up, refresh, or remove a VM
 
 ## Rules

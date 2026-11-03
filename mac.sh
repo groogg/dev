@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # macOS setup. Remote Linux VMs use remote.sh instead.
 #
-#   ./mac.sh install   full setup (safe to re-run; installs what's missing, upgrades nothing)
-#   ./mac.sh update    upgrade Homebrew packages and toolchains
-#   ./mac.sh sync      re-link dotfiles
+#   dev install   full setup (safe to re-run; installs what's missing, upgrades nothing)
+#   dev update    upgrade Homebrew packages and toolchains
+#   dev sync      re-link dotfiles
 #
-# Once ~/.zshrc is linked, `dev install|update|sync` runs this script.
+# `dev` is ~/.local/bin/dev, a link to this script; before the first install, run ./mac.sh instead.
 set -euo pipefail
 
-repo=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd) # follows the ~/.local/bin/dev link
 export PATH="/opt/homebrew/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 brew_install() {
@@ -23,6 +23,9 @@ brew_bundle() {
 
 link_dotfiles() {
     (cd "$repo/dotfiles" && stow -R -t "$HOME" */)
+    # `dev` is this script, so every terminal runs the current version
+    mkdir -p "$HOME/.local/bin"
+    ln -sfn "$repo/mac.sh" "$HOME/.local/bin/dev"
 }
 
 toolchains() {
@@ -100,7 +103,7 @@ case "${1:-}" in
         ;;
     sync) link_dotfiles ;;
     *)
-        echo "usage: mac.sh install | update | sync" >&2
+        echo "usage: dev install | update | sync" >&2
         exit 1
         ;;
 esac
