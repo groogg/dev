@@ -18,6 +18,7 @@ brew 'gh'
 cask 'ghostty'
 cask 'font-jetbrains-mono-nerd-font' # starship's icons
 cask 'visual-studio-code'
+cask 'qlmarkdown' # Quick Look for .md
 cask 'podman-desktop' # instead of docker-desktop
 
 # cloud and infrastructure
